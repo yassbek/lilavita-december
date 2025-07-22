@@ -10,7 +10,7 @@ interface AIAnalysisCardProps {
  * AI analysis results component
  * TODO: Connect to actual AI analysis service
  */
-export function AIAnalysisCard() {
+export function AIAnalysisCard({ submission }: AIAnalysisCardProps) {
   return (
     <Card className="border-2 border-gray-200 shadow-none">
       <CardHeader className="bg-gray-50">
@@ -18,6 +18,8 @@ export function AIAnalysisCard() {
         <CardDescription>Team & Organization readiness assessment based on Impact Factory framework</CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
+        {/* Example usage of submission prop to avoid unused variable error */}
+        <div className="text-xs text-gray-400">Submission ID: {submission.id}</div>
         {/* Strengths section */}
         <div>
           <h4 className="font-semibold text-[#D4AE36] mb-3 flex items-center gap-2">

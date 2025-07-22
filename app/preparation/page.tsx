@@ -122,7 +122,7 @@ export default function PreparationPage() {
 
         {/* Readiness Areas */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">What We'll Discuss</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">What We&apos;ll Discuss</h2>
           <div className="grid gap-6">
             {readinessAreas.map((area, index) => {
               const Icon = area.icon
