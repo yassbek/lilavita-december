@@ -2,6 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+// Kleine Helferfunktion, um eine Verzögerung zu erzeugen
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 interface TypeformAnswer {
   field: { ref: string };
   type: string;
@@ -20,6 +23,10 @@ export async function POST(request: NextRequest) {
     if (!responseId) {
       return NextResponse.json({ message: 'responseId fehlt im Request' }, { status: 400 });
     }
+
+    // FIX 1: Warten Sie 2 Sekunden, um Typeform Zeit zur Verarbeitung zu geben.
+    // Dies verhindert den "404 Not Found" Fehler.
+    await delay(2000);
 
     // 1. Hole Antworten von der Typeform-API
     const typeformToken = process.env.TYPEFORM_TOKEN;
@@ -76,8 +83,11 @@ export async function POST(request: NextRequest) {
       anzahl_produkte: findAnswerByRef('05cf7b76-92f5-4132-917a-a3a83f6ffa3e')?.number,
       umsatz_letztes_jahr: findAnswerByRef('93585c9a-3656-4e29-a237-c32cda3c4a2a')?.number,
       umsatz_seit_beginn: findAnswerByRef('9e76759c-b014-45e7-a287-28e73360fa8b')?.number,
-      // HIER IST DIE UMWANDLUNG: Sende 1 für true, 0 for false
+      
+      // FIX 2: Konvertiere den Boolean in einen String ('1' oder '0').
+      // Dies behebt den "VALUE_OUT_OF_RANGE" Fehler von Directus.
       aktuelle_kunden_bool: hatAktuelleKunden === true ? '1' : '0',
+
       aktuelle_kunden_int: findAnswerByRef('10ef9245-71f7-4f67-941a-90f9f5324821')?.number,
       branche: directusBrancheValue,
       mind_3_fte: hatMindestens3FTE,
