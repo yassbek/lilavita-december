@@ -1,11 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export default function RejectionPage() {
-  const router = useRouter();
 
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#FDFCF7] text-center p-4 relative">

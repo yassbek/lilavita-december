@@ -128,7 +128,7 @@ const ChartTooltipContent = React.forwardRef<
     } = props
     const { config } = useChart()
 
-    const safePayload = Array.isArray(payload) ? payload : []
+    const safePayload = React.useMemo(() => Array.isArray(payload) ? payload : [], [payload]);
 
     const tooltipLabel = React.useMemo(() => {
       if (hideLabel || !safePayload.length) {
@@ -266,7 +266,7 @@ const ChartLegendContent = React.forwardRef<
   ) => {
     const { config } = useChart()
 
-    const safePayload = Array.isArray(payload) ? payload : []
+    const safePayload = React.useMemo(() => Array.isArray(payload) ? payload : [], [payload]);
 
     if (!safePayload.length) {
       return null

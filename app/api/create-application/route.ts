@@ -115,8 +115,17 @@ export async function POST(request: NextRequest) {
     // 5. Gib den "qualified" Status und die neuen Daten zurück
     return NextResponse.json({ status: 'qualified', data: result.data }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Fehler in /api/create-application:", error);
-    return NextResponse.json({ message: error.message || 'Fehler bei der Verarbeitung' }, { status: 500 });
+    let message = 'Fehler bei der Verarbeitung';
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as { message?: unknown }).message === 'string'
+    ) {
+      message = (error as { message: string }).message;
+    }
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

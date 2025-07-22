@@ -45,12 +45,17 @@ export default function InterviewPage() {
             setIsConnected(false)
             setConnecting(false)
         },
-        onMessage: (message) => {
-            const text = message?.text ?? JSON.stringify(message);
-            appendToTranscript("ai", text);
+        onMessage: (props: { message: string; source: "user" | "ai" }) => {
+            appendToTranscript(props.source, props.message);
         },
-        onError: (error) => {
-            setConnectionError(error?.message || "Unknown error")
+        onError: (error: { message?: string } | string) => {
+            let message: string;
+            if (typeof error === 'string') {
+                message = error;
+            } else {
+                message = error?.message || "Unknown error";
+            }
+            setConnectionError(message)
             setConnecting(false)
         },
     })
@@ -71,7 +76,7 @@ export default function InterviewPage() {
                 if (videoRef.current) {
                     videoRef.current.srcObject = mediaStream
                 }
-            } catch (error: any) {
+            } catch {
                 setPermissionError("Kamera-/Mikrofonberechtigungen erforderlich.")
                 setHasPermissions(false)
             }
@@ -82,11 +87,11 @@ export default function InterviewPage() {
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach((track) => track.stop())
             }
-            if(conversation.isSessionActive){
+            if(isConnected){
                 conversation.endSession();
             }
         }
-    }, [])
+    }, [conversation, isConnected])
 
     const startInterview = async () => {
         setConnectionError(null)
@@ -99,9 +104,18 @@ export default function InterviewPage() {
             await conversation.startSession({
                 agentId: "nIUEIdEBk48Ul9rgT1Fp",
             })
-        } catch (error: any) {
-            setConnectionError(error?.message || "Interview konnte nicht gestartet werden.")
-            setConnecting(false)
+        } catch (error: unknown) {
+            let message = "Interview konnte nicht gestartet werden.";
+            if (
+                error &&
+                typeof error === 'object' &&
+                'message' in error &&
+                typeof (error as { message?: unknown }).message === 'string'
+            ) {
+                message = (error as { message: string }).message;
+            }
+            setConnectionError(message);
+            setConnecting(false);
         }
     }
 

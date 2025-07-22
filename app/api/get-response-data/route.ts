@@ -76,8 +76,17 @@ export async function GET(request: NextRequest) {
     // 3. Gib die benötigten Daten zurück
     return NextResponse.json(application, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Fehler in /api/get-response-data:", error);
-    return NextResponse.json({ message: error.message || 'Interner Serverfehler' }, { status: 500 });
+    let message = 'Interner Serverfehler';
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as { message?: unknown }).message === 'string'
+    ) {
+      message = (error as { message: string }).message;
+    }
+    return NextResponse.json({ message }, { status: 500 });
   }
 }
