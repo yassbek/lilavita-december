@@ -77,10 +77,12 @@ function AppView() {
       }
       
       const data = await apiResponse.json();
+      // Assume data.applicationId is returned from the API
       const queryParams = new URLSearchParams({
         name: data.name || '',
         startup: data.startup || '',
         branche: data.branche || '',
+        applicationId: data.id || '',
       }).toString();
 
       router.push(`/start?${queryParams}`);

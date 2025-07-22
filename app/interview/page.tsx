@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { useConversation } from "@elevenlabs/react"
 import Image from "next/image";
+import { useSearchParams } from "next/navigation"
 
 export default function InterviewPage() {
   const router = useRouter()
@@ -23,77 +24,141 @@ export default function InterviewPage() {
   const [isMuted] = useState(false)
   const [isCameraOff] = useState(false)
   const [hasPermissions, setHasPermissions] = useState(false)
+  const [permissionError, setPermissionError] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
+  const [interviewStartedAt, setInterviewStartedAt] = useState<Date | null>(null)
+  const [interviewEndedAt, setInterviewEndedAt] = useState<Date | null>(null)
+  const searchParams = useSearchParams();
+  const applicationId = searchParams.get("applicationId");
 
+  // Helper: Append message to transcript
+  const appendToTranscript = useCallback((role: "user" | "ai", text: string) => {
+    setTranscript((prev) => [...prev, { role, text, timestamp: new Date().toISOString() }])
+  }, [])
+
+  // ElevenLabs conversation hook
   const conversation = useConversation({
     onConnect: () => {
-      console.log("Connected to AI agent")
       setIsConnected(true)
+      setConnecting(false)
+      setConnectionError(null)
+      setInterviewStartedAt(new Date())
     },
     onDisconnect: () => {
-      console.log("Disconnected from AI agent")
       setIsConnected(false)
+      setConnecting(false)
     },
     onMessage: (message) => {
-      console.log("AI Message:", message)
+      if (typeof message === "string") {
+        appendToTranscript("ai", message)
+      } else if (typeof message === "object" && message !== null) {
+        if (typeof message.message === "string") {
+          appendToTranscript("ai", message.message)
+        } else if (typeof message.text === "string") {
+          appendToTranscript("ai", message.text)
+        } else {
+          appendToTranscript("ai", JSON.stringify(message))
+        }
+      }
     },
     onError: (error) => {
-      console.error("Conversation error:", error)
+      setConnectionError(error?.message || "Unknown error")
+      setConnecting(false)
     },
   })
 
+  // Camera/mic permission and video setup
   useEffect(() => {
-    // Request camera and microphone permissions on component mount
-    requestPermissions()
-
+    let didCancel = false
+    async function setupCamera() {
+      setPermissionError(null)
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setPermissionError("Camera/microphone not supported in this browser.")
+          setHasPermissions(false)
+          return
+        }
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        if (didCancel) return
+        streamRef.current = mediaStream
+        setHasPermissions(true)
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream
+        }
+      } catch (error: any) {
+        setPermissionError("Failed to get camera/microphone permissions.")
+        setHasPermissions(false)
+      }
+    }
+    setupCamera()
     return () => {
-      // Cleanup media stream on unmount
+      didCancel = true
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const requestPermissions = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      })
-      streamRef.current = mediaStream
-      setHasPermissions(true)
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-      }
-    } catch (error) {
-      console.error("Failed to get media permissions:", error)
-      setHasPermissions(false)
-    }
-  }
-
+  // Start interview (agent connection)
   const startInterview = async () => {
+    setConnectionError(null)
     if (!hasPermissions) {
-      await requestPermissions()
+      setPermissionError("Camera/microphone permissions required.")
+      return
     }
-
+    setConnecting(true)
     try {
       await conversation.startSession({
         agentId: "nIUEIdEBk48Ul9rgT1Fp", // ElevenLabs agent ID
       })
-    } catch (error) {
-      console.error("Failed to start interview:", error)
+      // Interview start time is set in onConnect
+    } catch (error: any) {
+      setConnectionError(error?.message || "Failed to start interview.")
+      setConnecting(false)
     }
   }
 
+  // End interview: end session, send transcript to Directus, then navigate
   const endInterview = async () => {
+    setInterviewEndedAt(new Date())
     await conversation.endSession()
-    // Navigate to completion page after a short delay
+    try {
+      await sendTranscriptToDirectus()
+    } catch (err) {
+      // Optionally handle/report error
+    }
     setTimeout(() => {
       router.push("/completion")
     }, 2000)
   }
+
+  // Send transcript to Directus
+  const sendTranscriptToDirectus = async () => {
+    if (!transcript.length || !applicationId) return;
+    const url = process.env.NEXT_PUBLIC_DIRECTUS_URL + `/items/applications/${applicationId}`;
+    const token = process.env.NEXT_PUBLIC_DIRECTUS_TOKEN;
+    const payload = {
+      transcript,
+      started_at: interviewStartedAt?.toISOString() || null,
+      ended_at: interviewEndedAt?.toISOString() || new Date().toISOString(),
+      // Optionally add user/session info here
+    };
+    await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // User message sending (if you want to allow user text input, add here)
+  // Example: appendToTranscript("user", userMessage)
 
   return (
     <div className="min-h-screen bg-white">
@@ -239,7 +304,7 @@ export default function InterviewPage() {
             {!isConnected ? (
               <Button
                 onClick={startInterview}
-                disabled={!hasPermissions}
+                disabled={!hasPermissions || connecting}
                 className="bg-brand-gold hover:bg-yellow-500 text-black font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
               >
                 <Phone className="w-5 h-5 mr-3" />
@@ -271,6 +336,20 @@ export default function InterviewPage() {
                 <span className="text-yellow-700 font-medium">
                   Camera and microphone access required to continue
                 </span>
+              </div>
+            </div>
+          )}
+          {permissionError && (
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center space-x-3 bg-red-50 px-6 py-3 rounded-full border border-red-200">
+                <span className="text-red-700 font-medium">{permissionError}</span>
+              </div>
+            </div>
+          )}
+          {connectionError && (
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center space-x-3 bg-red-50 px-6 py-3 rounded-full border border-red-200">
+                <span className="text-red-700 font-medium">{connectionError}</span>
               </div>
             </div>
           )}

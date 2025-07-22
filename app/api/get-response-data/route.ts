@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
       name: findAnswerByRef('fa14b4e2-a817-485d-b5ae-f65753468cb9')?.text,
       startup: findAnswerByRef('8e3e55d3-eead-4b45-a8a7-f0796c29eda1')?.text,
       branche: findAnswerByRef('a539085b-a60c-468a-9741-8f7f37ffee37')?.choice?.label,
+      // TODO: Fetch the real applicationId from Directus using the extracted data
+      applicationId: '2', // <-- Replace with real lookup
     };
     
     return NextResponse.json(extractedData);
