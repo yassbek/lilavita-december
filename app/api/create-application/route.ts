@@ -5,13 +5,15 @@ import { NextRequest, NextResponse } from 'next/server';
 interface TypeformAnswer {
   field: { ref: string };
   type: string;
-  text?: string; date?: string; number?: number;
-  boolean?: boolean; choice?: { label: string; };
+  text?: string;
+  date?: string;
+  number?: number;
+  boolean?: boolean;
+  choice?: { label: string; };
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Hole die responseId aus dem Request-Body vom Frontend
     const body = await request.json();
     const responseId = body.responseId;
 
@@ -19,29 +21,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'responseId fehlt im Request' }, { status: 400 });
     }
 
-    // 2. Hole die vollständigen Antworten von der Typeform-API
+    // 1. Hole Antworten von der Typeform-API
     const typeformToken = process.env.TYPEFORM_TOKEN;
-    const formId = 'yYh3nt7W'; // Deine Form-ID
+    const formId = 'yYh3nt7W';
     const typeformApiUrl = `https://api.typeform.com/forms/${formId}/responses?included_response_ids=${responseId}`;
-    
+
     const typeformApiResponse = await fetch(typeformApiUrl, {
       headers: { 'Authorization': `Bearer ${typeformToken}` }
     });
 
     if (!typeformApiResponse.ok) {
-        const errorText = await typeformApiResponse.text();
-        throw new Error(`Fehler bei der Abfrage der Typeform-API: ${errorText}`);
+      const errorText = await typeformApiResponse.text();
+      throw new Error(`Fehler bei der Abfrage der Typeform-API: ${errorText}`);
     }
-    
+
     const responseData = await typeformApiResponse.json();
     if (!responseData.items || responseData.items.length === 0) {
       return NextResponse.json({ message: 'Typeform-Antwort nicht gefunden' }, { status: 404 });
     }
     const answers: TypeformAnswer[] = responseData.items[0].answers;
-
-    // 3. Transformiere die Daten für Directus
     const findAnswerByRef = (ref: string) => answers.find(a => a.field.ref === ref);
-    
+
+    // 2. Prüfe das Ausschlusskriterium sofort
+    const hatMindestens3FTE = findAnswerByRef('7be6dc5b-2c68-473c-a954-b6fa3f715350')?.boolean;
+
+    if (hatMindestens3FTE === false) {
+      return NextResponse.json({ status: 'disqualified', message: 'Ausschlusskriterium (mind_3_fte) nicht erfüllt.' }, { status: 200 });
+    }
+
+    // 3. NUR WENN qualifiziert: Transformiere die Daten
     const typeformBrancheLabel = findAnswerByRef('a539085b-a60c-468a-9741-8f7f37ffee37')?.choice?.label;
     const brancheValueMap: { [key: string]: string } = {
       'Kreislaufwirtschaft': 'kreislaufwirtschaft',
@@ -52,6 +60,9 @@ export async function POST(request: NextRequest) {
       'Bildung & Inklusion': 'bildung_inklusion'
     };
     const directusBrancheValue = typeformBrancheLabel ? brancheValueMap[typeformBrancheLabel] : undefined;
+    
+    // Hol den Boolean-Wert von Typeform
+    const hatAktuelleKunden = findAnswerByRef('baaf42bf-21f7-4556-a56d-d887301b1a9c')?.boolean;
 
     const directusData = {
       startup: findAnswerByRef('8e3e55d3-eead-4b45-a8a7-f0796c29eda1')?.text,
@@ -65,10 +76,11 @@ export async function POST(request: NextRequest) {
       anzahl_produkte: findAnswerByRef('05cf7b76-92f5-4132-917a-a3a83f6ffa3e')?.number,
       umsatz_letztes_jahr: findAnswerByRef('93585c9a-3656-4e29-a237-c32cda3c4a2a')?.number,
       umsatz_seit_beginn: findAnswerByRef('9e76759c-b014-45e7-a287-28e73360fa8b')?.number,
-      aktuelle_kunden_bool: findAnswerByRef('baaf42bf-21f7-4556-a56d-d887301b1a9c')?.boolean,
+      // HIER IST DIE UMWANDLUNG: Sende 1 für true, 0 for false
+      aktuelle_kunden_bool: hatAktuelleKunden === true ? 1 : 0,
       aktuelle_kunden_int: findAnswerByRef('10ef9245-71f7-4f67-941a-90f9f5324821')?.number,
       branche: directusBrancheValue,
-      mind_3_fte: findAnswerByRef('7be6dc5b-2c68-473c-a954-b6fa3f715350')?.boolean,
+      mind_3_fte: hatMindestens3FTE,
       runway_monate: findAnswerByRef('8562e808-55a9-4a38-9d91-7be0b0e68481')?.number,
     };
 
@@ -84,14 +96,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Directus Fehler: ${JSON.stringify(errorData)}`);
+      const errorData = await response.json();
+      throw new Error(`Directus Fehler: ${JSON.stringify(errorData)}`);
     }
 
     const result = await response.json();
 
-    // 5. Gib den neu erstellten Eintrag (mit der ID!) an das Frontend zurück
-    return NextResponse.json(result.data, { status: 200 });
+    // 5. Gib den "qualified" Status und die neuen Daten zurück
+    return NextResponse.json({ status: 'qualified', data: result.data }, { status: 200 });
 
   } catch (error: any) {
     console.error("Fehler in /api/create-application:", error);

@@ -50,7 +50,7 @@ database:
   "umsatz_letztes_jahr": "{{$trigger.payload.form_response.answers[?(@.field.ref=='93585c9a-3656-4e29-a237-c32cda3c4a2a')].number}}",
   "umsatz_seit_beginn": "{{$trigger.payload.form_response.answers[?(@.field.ref=='9e76759c-b014-45e7-a287-28e73360fa8b')].number}}",
   "aktuelle_kunden_bool": "{{$trigger.payload.form_response.answers[?(@.field.ref=='baaf42bf-21f7-4556-a56d-d887301b1a9c')].boolean}}",
-  "aktuell_kunden_int": "{{$trigger.payload.form_response.answers[?(@.field.ref=='10ef9245-71f7-4f67-941a-90f9f5324821')].number}}",
+  "aktuelle_kunden_int": "{{$trigger.payload.form_response.answers[?(@.field.ref=='10ef9245-71f7-4f67-941a-90f9f5324821')].number}}",
   "branche": "{{$trigger.payload.form_response.answers[?(@.field.ref=='a539085b-a60c-468a-9741-8f7f37ffee37')].choice.label}}",
   "mind_3_fte": "{{$trigger.payload.form_response.answers[?(@.field.ref=='7be6dc5b-2c68-473c-a954-b6fa3f715350')].boolean}}",
   "runway_monate": "{{$trigger.payload.form_response.answers[?(@.field.ref=='8562e808-55a9-4a38-9d91-7be0b0e68481')].number}}"

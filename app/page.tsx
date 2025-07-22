@@ -39,8 +39,8 @@ function LandingPage({ onStartClick }: { onStartClick: () => void }) {
         <p className="text-lg text-gray-600 mb-10 max-w-2xl">
           Du willst mit deinem Social Startup nachhaltige Wirkung erzielen? Unser Accelerator-Programm unterstützt dich mit Expertise, Netzwerk und Ressourcen. Starte jetzt deine Bewerbung und zeig uns dein Potenzial.
         </p>
-        <Button 
-          size="lg" 
+        <Button
+          size="lg"
           onClick={onStartClick}
           className="bg-[#D4AE36] hover:bg-[#c9a233] text-black font-bold py-4 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105"
         >
@@ -67,7 +67,6 @@ function AppView() {
     }
   }, [currentView]);
 
-  // handleTypeformSubmit ruft jetzt die neue API-Route auf
   const handleTypeformSubmit = async (payload: { responseId: string }) => {
     setIsLoading(true);
 
@@ -79,20 +78,25 @@ function AppView() {
       });
 
       if (!apiResponse.ok) {
-        throw new Error('Fehler beim Erstellen der Bewerbung auf dem Server');
+        // Dieser Check fängt jetzt echte Server-Fehler wie 404 oder 500 ab
+        const errorText = await apiResponse.text();
+        throw new Error(`Fehler bei der Kommunikation mit dem Server. Status: ${apiResponse.status}, Body: ${errorText}`);
       }
-      
-      // Die API gibt den kompletten neuen Eintrag inkl. ID zurück
-      const newApplicationData = await apiResponse.json(); 
 
-      const queryParams = new URLSearchParams({
-        name: newApplicationData.name || '',
-        startup: newApplicationData.startup || '',
-        branche: newApplicationData.branche || '',
-        applicationId: newApplicationData.id.toString(), // Die ID kommt direkt von unserer API!
-      }).toString();
+      const apiResponseData = await apiResponse.json();
 
-      router.push(`/start?${queryParams}`);
+      if (apiResponseData.status === 'qualified') {
+        const newApplicationData = apiResponseData.data;
+        const queryParams = new URLSearchParams({
+          name: newApplicationData.name || '',
+          startup: newApplicationData.startup || '', // KORRIGIERT
+          branche: newApplicationData.branche || '',
+          applicationId: newApplicationData.id.toString(),
+        }).toString();
+        router.push(`/start?${queryParams}`);
+      } else {
+        router.push('/rejection');
+      }
 
     } catch (error) {
       console.error("Fehler bei der Verarbeitung der Typeform-Antwort:", error);
@@ -105,10 +109,10 @@ function AppView() {
     <div className="relative w-full min-h-screen bg-[#FDFCF7]">
       {isLoading && <LoadingOverlay text="Analysiere Einreichung" />}
       {currentView === 'landing' && <LandingPage onStartClick={handleStartClick} />}
-      
+
       <div ref={typeformRef} className={`w-full h-screen ${currentView === 'typeform' ? 'block' : 'hidden'}`}>
         <Widget
-          id="yYh3nt7W" // Deine Typeform ID
+          id="yYh3nt7W"
           style={{ width: "100%", height: "100%" }}
           onSubmit={handleTypeformSubmit}
         />
