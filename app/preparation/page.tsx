@@ -10,7 +10,7 @@ import { CheckCircle, Lightbulb, Target, Users, Cog, ArrowRight, Info } from "lu
 
 export default function PreparationPage() {
   const router = useRouter()
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
+  const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
   const [isReady, setIsReady] = useState(false)
 
   const readinessAreas = [
@@ -99,10 +99,8 @@ export default function PreparationPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 mb-6">
-              The conversation will be natural and adaptive, focusing on understanding your startup's maturity and
-              potential for impact. The AI will ask follow-up questions based on your responses, so there's no need to
-              memorize specific answers.
+            <p className="text-gray-700 mb-4">
+              Our application process is designed to understand your startup&apos;s readiness across three key dimensions: Technology, Team &amp; Organization, and Impact. The next step is an AI-powered conversation that will assess your startup&apos;s maturity and potential.
             </p>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -159,7 +157,7 @@ export default function PreparationPage() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Preparation Checklist</CardTitle>
-            <CardDescription>Review these points to ensure you're ready for the conversation</CardDescription>
+            <CardDescription>Review these points to ensure you&apos;re ready for the conversation</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -174,10 +172,12 @@ export default function PreparationPage() {
                   <label
                     htmlFor={`checklist-${index}`}
                     className={`text-sm cursor-pointer ${
-                      checkedItems[index] ? "text-gray-900 line-through" : "text-gray-700"
+                      checkedItems[index]
+                        ? "text-gray-900 line-through [text-decoration-color:#D4AE36]"
+                        : "text-gray-700"
                     }`}
                   >
-                    {item}
+                    {item.replace("'", "&apos;")}
                   </label>
                 </div>
               ))}
@@ -187,7 +187,7 @@ export default function PreparationPage() {
               <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <p className="font-medium text-green-900">You're ready to proceed!</p>
+                  <p className="font-medium text-green-900">You&apos;re ready to proceed!</p>
                 </div>
                 <p className="text-sm text-green-700 mt-1">
                   All preparation items completed. You can now start your interview.
@@ -209,7 +209,7 @@ export default function PreparationPage() {
                 <ul className="text-sm text-gray-700 space-y-1">
                   <li>• Speak naturally and be authentic</li>
                   <li>• Provide specific examples when possible</li>
-                  <li>• Don't worry about perfect answers</li>
+                  <li>• Don&apos;t worry about perfect answers</li>
                   <li>• Ask for clarification if needed</li>
                 </ul>
               </div>
@@ -223,6 +223,9 @@ export default function PreparationPage() {
                 </ul>
               </div>
             </div>
+            <p className="text-sm text-yellow-800">
+              <strong>Note:</strong> You&apos;ll be prompted to allow camera and microphone access when you start the interview. Please ensure you&apos;re in a quiet environment with good lighting.
+            </p>
           </CardContent>
         </Card>
 

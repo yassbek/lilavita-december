@@ -10,7 +10,7 @@ interface AIAnalysisCardProps {
  * AI analysis results component
  * TODO: Connect to actual AI analysis service
  */
-export function AIAnalysisCard({ submission }: AIAnalysisCardProps) {
+export function AIAnalysisCard() {
   return (
     <Card className="border-2 border-gray-200 shadow-none">
       <CardHeader className="bg-gray-50">

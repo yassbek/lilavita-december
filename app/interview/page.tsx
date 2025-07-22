@@ -6,26 +6,22 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  Mic,
   MicOff,
-  Camera,
-  CameraOff,
   Phone,
   PhoneOff,
   Volume2,
-  VolumeX,
   MessageSquare,
   User,
   Sparkles,
 } from "lucide-react"
 import { useConversation } from "@elevenlabs/react"
+import Image from "next/image";
 
 export default function InterviewPage() {
   const router = useRouter()
   const [isConnected, setIsConnected] = useState(false)
-  const [isMuted, setIsMuted] = useState(false)
-  const [isCameraOff, setIsCameraOff] = useState(false)
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false)
+  const [isMuted] = useState(false)
+  const [isCameraOff] = useState(false)
   const [hasPermissions, setHasPermissions] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
@@ -57,7 +53,7 @@ export default function InterviewPage() {
         stream.getTracks().forEach((track) => track.stop())
       }
     }
-  }, [])
+  }, [stream])
 
   const requestPermissions = async () => {
     try {
@@ -100,26 +96,6 @@ export default function InterviewPage() {
     }, 2000)
   }
 
-  const toggleMute = () => {
-    if (stream) {
-      const audioTrack = stream.getAudioTracks()[0]
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled
-        setIsMuted(!audioTrack.enabled)
-      }
-    }
-  }
-
-  const toggleCamera = () => {
-    if (stream) {
-      const videoTrack = stream.getVideoTracks()[0]
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled
-        setIsCameraOff(!videoTrack.enabled)
-      }
-    }
-  }
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -129,7 +105,7 @@ export default function InterviewPage() {
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-3">
                 {/* Replace Sparkles icon and text with logo */}
-                <img src="/impactfactory_logo.png" alt="Impact Factory Logo" className="h-10" />
+                <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" height={40} width={160} className="h-10 w-auto" />
                 <div>
                   {/* Optionally, you can keep the subtitle below the logo */}
                   <p className="text-sm text-gray-600">AI-Powered Readiness Assessment</p>

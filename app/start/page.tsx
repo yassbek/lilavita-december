@@ -9,7 +9,7 @@ import { CheckCircle, Clock, User, MessageSquare, Camera, Mic } from "lucide-rea
 
 export default function StartPage() {
   const router = useRouter()
-  const [userInfo, setUserInfo] = useState({
+  const [userInfo] = useState({
     name: "Alex Schmidt",
     email: "alex.schmidt@example.com",
     company: "EcoTech Solutions",
@@ -85,7 +85,7 @@ export default function StartPage() {
           <CardHeader>
             <CardTitle className="text-xl">Welcome to the Impact Factory Application Process</CardTitle>
             <CardDescription>
-              Thank you for your interest in joining our accelerator program. You're applying for the{" "}
+              Thank you for your interest in joining our accelerator program. You&apos;re applying for the{" "}
               <Badge variant="outline" className="border-brand-gold text-yellow-800">
                 {userInfo.sector}
               </Badge>{" "}
@@ -94,9 +94,7 @@ export default function StartPage() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 mb-4">
-              Our application process is designed to understand your startup's readiness across three key dimensions:
-              Technology, Team & Organization, and Impact. The next step is an AI-powered conversation that will assess
-              your startup's maturity and potential.
+              Our application process is designed to understand your startup&apos;s readiness across three key dimensions: Technology, Team &amp; Organization, and Impact. The next step is an AI-powered conversation that will assess your startup&apos;s maturity and potential.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 mb-2">What to expect:</h4>
@@ -181,8 +179,7 @@ export default function StartPage() {
             </div>
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                <strong>Note:</strong> You'll be prompted to allow camera and microphone access when you start the
-                interview. Please ensure you're in a quiet environment with good lighting.
+                <strong>Note:</strong> You&apos;ll be prompted to allow camera and microphone access when you start the interview. Please ensure you&apos;re in a quiet environment with good lighting.
               </p>
             </div>
           </CardContent>

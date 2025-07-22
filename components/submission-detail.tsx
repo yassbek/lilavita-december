@@ -8,7 +8,7 @@ import { ArrowLeft, Building, Users, MapPin, Euro, TrendingUp, Target } from "lu
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from "recharts"
 
 interface SubmissionDetailProps {
-  submission: any
+  submission: unknown
   onBack: () => void
 }
 
@@ -16,43 +16,43 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
   const radarData = [
     {
       subject: "Technologie",
-      score: submission.readinessScores.technology,
+      score: (submission as unknown as { readinessScores: { technology: number } }).readinessScores.technology,
       ideal: 90,
     },
     {
       subject: "Team",
-      score: submission.readinessScores.team,
+      score: (submission as unknown as { readinessScores: { team: number } }).readinessScores.team,
       ideal: 90,
     },
     {
       subject: "Organisation",
-      score: submission.readinessScores.organization,
+      score: (submission as unknown as { readinessScores: { organization: number } }).readinessScores.organization,
       ideal: 90,
     },
     {
       subject: "Impact",
-      score: submission.readinessScores.impact,
+      score: (submission as unknown as { readinessScores: { impact: number } }).readinessScores.impact,
       ideal: 90,
     },
     {
       subject: "Markt",
-      score: submission.readinessScores.market,
+      score: (submission as unknown as { readinessScores: { market: number } }).readinessScores.market,
       ideal: 90,
     },
     {
       subject: "Finanzen",
-      score: submission.readinessScores.finance,
+      score: (submission as unknown as { readinessScores: { finance: number } }).readinessScores.finance,
       ideal: 90,
     },
   ]
 
-  const getScoreColor = (score) => {
+  const getScoreColor = (score: number) => {
     if (score >= 85) return "text-green-600"
     if (score >= 70) return "text-yellow-600"
     return "text-red-600"
   }
 
-  const getScoreBg = (score) => {
+  const getScoreBg = (score: number) => {
     if (score >= 85) return "bg-green-50 border-green-200"
     if (score >= 70) return "bg-yellow-50 border-yellow-200"
     return "bg-red-50 border-red-200"
@@ -71,18 +71,18 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
                   Back to Dashboard
                 </Button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{submission.startupName}</h1>
-                  <p className="text-gray-600 mt-1">Founded by {submission.founderName}</p>
+                  <h1 className="text-3xl font-bold text-gray-900">{(submission as unknown as { startupName: string }).startupName}</h1>
+                  <p className="text-gray-600 mt-1">Founded by {(submission as unknown as { founderName: string }).founderName}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
                 <Badge
                   variant={
-                    submission.matchScore >= 85 ? "default" : submission.matchScore >= 70 ? "secondary" : "destructive"
+                    (submission as unknown as { matchScore: number }).matchScore >= 85 ? "default" : (submission as unknown as { matchScore: number }).matchScore >= 70 ? "secondary" : "destructive"
                   }
                   className="text-lg px-4 py-2"
                 >
-                  {submission.matchScore}% Match
+                  {(submission as unknown as { matchScore: number }).matchScore}% Match
                 </Badge>
               </div>
             </div>
@@ -106,25 +106,25 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Sektor:</span>
-                    <Badge variant="outline">{submission.sector}</Badge>
+                    <Badge variant="outline">{(submission as unknown as { sector: string }).sector}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600 flex items-center gap-1">
                       <Users className="h-4 w-4" />
                       Team Size:
                     </span>
-                    <span className="font-medium">{submission.details.teamSize} Personen</span>
+                    <span className="font-medium">{(submission as unknown as { details: { teamSize: string } }).details.teamSize} Personen</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600 flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
                       Standort:
                     </span>
-                    <span className="font-medium">{submission.details.location}</span>
+                    <span className="font-medium">{(submission as unknown as { details: { location: string } }).details.location}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Funding Stage:</span>
-                    <span className="font-medium">{submission.details.fundingStage}</span>
+                    <span className="font-medium">{(submission as unknown as { details: { fundingStage: string } }).details.fundingStage}</span>
                   </div>
                 </div>
 
@@ -132,7 +132,7 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
 
                 <div>
                   <h4 className="font-medium mb-2">Beschreibung</h4>
-                  <p className="text-sm text-gray-600">{submission.details.description}</p>
+                  <p className="text-sm text-gray-600">{(submission as unknown as { details: { description: string } }).details.description}</p>
                 </div>
               </CardContent>
             </Card>
@@ -152,15 +152,15 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
                       <Euro className="h-4 w-4" />
                       Revenue:
                     </span>
-                    <span className="font-medium">{submission.details.keyMetrics.revenue}</span>
+                    <span className="font-medium">{(submission as unknown as { details: { keyMetrics: { revenue: string } } }).details.keyMetrics.revenue}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm text-gray-600">Customers:</span>
-                    <span className="font-medium">{submission.details.keyMetrics.customers}</span>
+                    <span className="font-medium">{(submission as unknown as { details: { keyMetrics: { customers: string } } }).details.keyMetrics.customers}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm text-gray-600">Team Experience:</span>
-                    <span className="font-medium">{submission.details.keyMetrics.teamExperience}</span>
+                    <span className="font-medium">{(submission as unknown as { details: { keyMetrics: { teamExperience: string } } }).details.keyMetrics.teamExperience}</span>
                   </div>
                 </div>
               </CardContent>
@@ -173,7 +173,7 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
                 <CardDescription>Detailed breakdown of assessment areas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {Object.entries(submission.readinessScores).map(([key, score]) => (
+                {Object.entries((submission as unknown as { readinessScores: { [key: string]: number } }).readinessScores).map(([key, score]) => (
                   <div key={key} className={`p-3 rounded-lg border ${getScoreBg(score)}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium capitalize">
@@ -278,7 +278,7 @@ export function SubmissionDetail({ submission, onBack }: SubmissionDetailProps) 
                     <li className="flex items-start gap-2">
                       <span className="text-green-500 mt-1">•</span>
                       <span>
-                        Starkes technisches Team mit nachgewiesener Expertise im {submission.sector.toLowerCase()}
+                        Starkes technisches Team mit nachgewiesener Expertise im {(submission as unknown as { sector: string }).sector.toLowerCase()}
                       </span>
                     </li>
                     <li className="flex items-start gap-2">

@@ -4,6 +4,7 @@ import { useState, Suspense, useRef, useEffect } from "react";
 import { Widget } from "@typeform/embed-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 function LoadingOverlay({ text }: { text: string }) {
   return (
@@ -23,7 +24,7 @@ function PageHeader() {
   return (
     <header className="absolute top-0 left-0 w-full p-6">
       <div className="container mx-auto">
-        <img src="/impactfactory_logo.png" alt="Impact Factory Logo" className="h-8 md:h-10" />
+        <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" height={40} width={160} className="h-8 md:h-10 w-auto" />
       </div>
     </header>
   );
@@ -66,14 +67,12 @@ function AppView() {
     }
   }, [currentView]);
 
-  const handleTypeformSubmit = async (response: { formId: string; responseId: string }) => {
+  const handleTypeformSubmit = async () => {
     setIsLoading(true);
     try {
       // Optionally, you can call your API here if needed
       // await fetch('/api/getResponse', ...)
       router.push("/start");
-    } catch (error) {
-      alert("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
     } finally {
       setIsLoading(false);
     }

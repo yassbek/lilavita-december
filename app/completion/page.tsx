@@ -87,8 +87,7 @@ export default function CompletionPage() {
             Submission Successful!
           </h2>
           <p className="text-gray-600 mt-2 max-w-2xl mx-auto">
-            Your Impact Factory accelerator application has been successfully submitted. Our team will review your
-            interview and get back to you soon.
+            Your Impact Factory accelerator application has been successfully submitted. Our team will review your interview and get back to you soon.
           </p>
         </div>
 
@@ -96,7 +95,7 @@ export default function CompletionPage() {
         <Card className="mb-8 border-green-200 bg-green-50">
           <CardHeader>
             <CardTitle className="text-green-900">What Happens Next</CardTitle>
-            <CardDescription className="text-green-700">Here's what you can expect in the coming weeks</CardDescription>
+            <CardDescription className="text-green-700">Here&apos;s what you can expect in the coming weeks</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -109,7 +108,7 @@ export default function CompletionPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-green-900">{step.title}</h4>
-                      <p className="text-sm text-green-700 mt-1">{step.description}</p>
+                      <p className="text-sm text-green-700 mt-1">{step.description.replace("'", "&apos;")}</p>
                       <Badge variant="outline" className="mt-2 border-green-300 text-green-700 text-xs">
                         {step.timeframe}
                       </Badge>
@@ -136,21 +135,21 @@ export default function CompletionPage() {
                   <CheckCircle className="w-6 h-6 text-blue-600" />
                 </div>
                 <h4 className="font-medium text-blue-900">Technology Readiness</h4>
-                <p className="text-sm text-blue-700 mt-1">Product development & technical maturity</p>
+                <p className="text-sm text-blue-700 mt-1">Product development &amp; technical maturity</p>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <CheckCircle className="w-6 h-6 text-purple-600" />
                 </div>
                 <h4 className="font-medium text-purple-900">Team & Organization</h4>
-                <p className="text-sm text-purple-700 mt-1">Team composition & organizational structure</p>
+                <p className="text-sm text-purple-700 mt-1">Team composition &amp; organizational structure</p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <h4 className="font-medium text-green-900">Impact Readiness</h4>
-                <p className="text-sm text-green-700 mt-1">Social & environmental impact goals</p>
+                <p className="text-sm text-green-700 mt-1">Social &amp; environmental impact goals</p>
               </div>
             </div>
           </CardContent>
@@ -160,7 +159,7 @@ export default function CompletionPage() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Stay Connected</CardTitle>
-            <CardDescription>We'll keep you updated throughout the review process</CardDescription>
+            <CardDescription>We&apos;ll keep you updated throughout the review process</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-6">
