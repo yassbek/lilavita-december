@@ -24,7 +24,7 @@ export default function InterviewPage() {
   const [isCameraOff] = useState(false)
   const [hasPermissions, setHasPermissions] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [stream, setStream] = useState<MediaStream | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   const conversation = useConversation({
     onConnect: () => {
@@ -49,11 +49,12 @@ export default function InterviewPage() {
 
     return () => {
       // Cleanup media stream on unmount
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
       }
     }
-  }, [stream])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const requestPermissions = async () => {
     try {
@@ -61,10 +62,8 @@ export default function InterviewPage() {
         video: true,
         audio: true,
       })
-
-      setStream(mediaStream)
+      streamRef.current = mediaStream
       setHasPermissions(true)
-
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
       }
