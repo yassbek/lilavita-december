@@ -91,7 +91,7 @@ export default function CompletionPage() {
           </p>
         </div>
 
-        {/* Summary Card */}
+        {/* Summary Card by me */}
         <Card className="mb-8 border-green-200 bg-green-50">
           <CardHeader>
             <CardTitle className="text-green-900">What Happens Next</CardTitle>

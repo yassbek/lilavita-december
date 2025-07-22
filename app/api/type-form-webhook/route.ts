@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     const result = await response.json();
 
     console.log("✅ Erfolgreich! Daten in Directus erstellt:", result);
-    return NextResponse.json({ message: 'Erfolgreich verarbeitet', result }, { status: 200 });
+    return NextResponse.json({ message: 'Erfolgreich verarbeitet' , result }, { status: 200 });
 
   } catch (error) {
     console.error("Fehler im Webhook:", error);
