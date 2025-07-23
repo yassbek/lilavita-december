@@ -145,6 +145,20 @@ export default function InterviewPage() {
         await conversation.endSession();
         setTimeout(async () => {
             await sendTranscriptToDirectus();
+            // Also send transcript to the new analysis endpoint
+            if (applicationId && transcript.length > 0) {
+                try {
+                    const res = await fetch('/api/analyze-transcript', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ transcript, applicationId })
+                    });
+                    const data = await res.json();
+                    console.log('Analysis result:', data);
+                } catch (err) {
+                    console.error('Error calling analyze-transcript:', err);
+                }
+            }
             const params = new URLSearchParams(searchParams);
             router.push(`/completion?${params.toString()}`);
         }, 200);
