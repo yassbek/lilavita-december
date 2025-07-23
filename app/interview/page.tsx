@@ -70,10 +70,7 @@ export default function InterviewPage() {
                 if (didCancel) return
                 streamRef.current = mediaStream
                 setHasPermissions(true)
-                if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream
-                    console.log("Video stream set:", mediaStream); // Debug video
-                }
+                // REMOVE videoRef.current.srcObject assignment from here
             } catch {
                 setPermissionError("Kamera-/Mikrofonberechtigungen erforderlich.")
                 setHasPermissions(false)
@@ -89,6 +86,13 @@ export default function InterviewPage() {
             }
         }
     }, []) // Leeres Array ist korrekt.
+
+    // Dedicated effect to assign the video stream for local preview only
+    useEffect(() => {
+        if (hasPermissions && !isCameraOff && videoRef.current && streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+        }
+    }, [hasPermissions, isCameraOff, videoRef, streamRef]);
 
     // KORREKTUR 3: Der separate, korrekte Effekt, der die Session nur beendet, wenn das Fenster geschlossen wird.
     useEffect(() => {
@@ -152,24 +156,22 @@ export default function InterviewPage() {
 
     const endInterview = async () => {
         await conversation.endSession();
-        setTimeout(async () => {
-            // Ensure transcript is saved first
-            await sendTranscriptToDirectus();
-            // Call analyze-transcript endpoint and log Gemini's response
-            try {
-                const res = await fetch('/api/analyze-transcript', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transcript, applicationId }), // send both
-                });
-                const data = await res.json();
-                console.log("Gemini analyze-transcript response:", data);
-            } catch (err) {
-                console.error("Error calling analyze-transcript:", err);
-            }
-            const params = new URLSearchParams(searchParams);
-            router.push(`/completion?${params.toString()}`);
-        }, 200);
+        // Ensure transcript is saved first
+        await sendTranscriptToDirectus();
+
+        // Redirect to completion page immediately
+        const params = new URLSearchParams(searchParams);
+        router.push(`/completion?${params.toString()}`);
+
+        // Fire-and-forget: analyze transcript in the background
+        fetch('/api/analyze-transcript', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript, applicationId }),
+        })
+        .then(res => res.json())
+        .then(data => console.log("Gemini analyze-transcript response:", data))
+        .catch(err => console.error("Error calling analyze-transcript:", err));
     };
     
     return (
