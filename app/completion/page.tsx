@@ -138,7 +138,31 @@ export default function CompletionPage() {
                         Bewerbung eingereicht am {new Date().toLocaleDateString("de-DE", { year: "numeric", month: "long", day: "numeric" })}
                     </p>
                 </div>
-            </main>
-        </div>
+            {/* ElevenLabs Convai Widget */}
+            <div id="elevenlabs-convai-widget-container" />
+        </main>
+        {/* ElevenLabs Convai Widget Embed */}
+        <ScriptWidget />
+    </div>
     )
+}
+
+// Add this component at the end of the file
+function ScriptWidget() {
+    // Only load the script once on the client
+    useEffect(() => {
+        if (document.getElementById('elevenlabs-convai-script')) return;
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+        script.async = true;
+        script.type = 'text/javascript';
+        script.id = 'elevenlabs-convai-script';
+        document.body.appendChild(script);
+
+        // Add the widget element
+        const widget = document.createElement('elevenlabs-convai');
+        widget.setAttribute('agent-id', 'nIUEIdEBk48Ul9rgT1Fp');
+        document.getElementById('elevenlabs-convai-widget-container')?.appendChild(widget);
+    }, []);
+    return null;
 }
