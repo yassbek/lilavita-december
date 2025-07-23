@@ -72,8 +72,9 @@ export default function InterviewPage() {
                 setHasPermissions(true)
                 if (videoRef.current) {
                     videoRef.current.srcObject = mediaStream
+                    console.log("Video stream set:", mediaStream); // Debug video
                 }
-            } catch (_error) {
+            } catch {
                 setPermissionError("Kamera-/Mikrofonberechtigungen erforderlich.")
                 setHasPermissions(false)
             }
@@ -92,7 +93,7 @@ export default function InterviewPage() {
     // KORREKTUR 3: Der separate, korrekte Effekt, der die Session nur beendet, wenn das Fenster geschlossen wird.
     useEffect(() => {
         const handleBeforeUnload = () => {
-            if (conversation.isSessionActive) {
+            if (isConnected) {
                 conversation.endSession();
             }
         };
@@ -102,7 +103,7 @@ export default function InterviewPage() {
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [conversation]);
+    }, [conversation, isConnected]);
 
 
     const startInterview = async () => {
@@ -115,6 +116,7 @@ export default function InterviewPage() {
         try {
             await conversation.startSession({
                 agentId: "nIUEIdEBk48Ul9rgT1Fp",
+                connectionType: "webrtc",
             })
         } catch (error) {
             let message = "Interview konnte nicht gestartet werden.";
@@ -151,8 +153,20 @@ export default function InterviewPage() {
     const endInterview = async () => {
         await conversation.endSession();
         setTimeout(async () => {
+            // Ensure transcript is saved first
             await sendTranscriptToDirectus();
-            // Optional: Hier die Analyse-API aufrufen, falls nötig.
+            // Call analyze-transcript endpoint and log Gemini's response
+            try {
+                const res = await fetch('/api/analyze-transcript', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transcript, applicationId }), // send both
+                });
+                const data = await res.json();
+                console.log("Gemini analyze-transcript response:", data);
+            } catch (err) {
+                console.error("Error calling analyze-transcript:", err);
+            }
             const params = new URLSearchParams(searchParams);
             router.push(`/completion?${params.toString()}`);
         }, 200);

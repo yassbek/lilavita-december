@@ -161,7 +161,7 @@ function ScriptWidget() {
 
         // Add the widget element
         const widget = document.createElement('elevenlabs-convai');
-        widget.setAttribute('agent-id', 'nIUEIdEBk48Ul9rgT1Fp');
+        widget.setAttribute('agent-id', 'UJcaKStMEPpXpzy9Uj5d');
         document.getElementById('elevenlabs-convai-widget-container')?.appendChild(widget);
     }, []);
     return null;
