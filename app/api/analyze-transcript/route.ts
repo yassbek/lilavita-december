@@ -41,11 +41,23 @@ ${JSON.stringify(transcript, null, 2)}`;
     console.log('Gemini raw response:', geminiData);
 
     // Extract JSON from Gemini response
-    let scores: any = null;
+    type Scores = {
+      team_kompetenz?: number;
+      team_dynamik?: number;
+      organisation?: number;
+      fuehrung?: number;
+      prozesse?: number;
+      kultur?: number;
+      ai_staerken?: string[];
+      ai_verbesserungsbereiche?: string[];
+      ai_empfehlungen?: string[];
+      [key: string]: unknown;
+    };
+    let scores: Scores = {};
     try {
       const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
       scores = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    } catch (e) {
+    } catch {
       return NextResponse.json({ error: 'Failed to parse Gemini response', geminiData }, { status: 500 });
     }
 
