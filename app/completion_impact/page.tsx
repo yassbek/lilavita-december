@@ -1,15 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image" // Hinzugefügt
+import { useRouter, useSearchParams } from "next/navigation" // useSearchParams importieren
+import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, Mail, Calendar, Users, Cog, Target } from "lucide-react"
+import { CheckCircle, Clock, Mail, Calendar, Users, Cog, Target, DollarSign, Megaphone } from "lucide-react"
 
 export default function CompletionPage() {
     const router = useRouter()
+    const searchParams = useSearchParams(); // Hook verwenden, um Query-Parameter zu lesen
+    const applicationId = searchParams.get("applicationId"); // application_id aus der URL holen
+    
     const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
@@ -28,6 +31,17 @@ export default function CompletionPage() {
         { title: "Programmstart", description: "Bei einer Zusage beginnt deine Reise im Accelerator.", timeframe: "Nächster Jahrgang", icon: Calendar },
     ]
 
+    // Funktion zur Navigation zum Dashboard oder einer Übersichtsseite
+    const goToDashboard = () => {
+        // Hier können Sie zu Ihrem Haupt-Dashboard oder einer Anwendungsübersicht navigieren
+        // Die applicationId kann bei Bedarf weitergegeben werden, z.B. zu einer Detailseite der Bewerbung
+        if (applicationId) {
+            router.push(`/preparation_marketing?applicationId=${applicationId}`); // Beispiel: Weiterleitung zu einem Dashboard mit der ID
+        } else {
+            router.push("/"); // Fallback, falls keine ID vorhanden ist
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -39,8 +53,8 @@ export default function CompletionPage() {
                                 <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" width={48} height={48} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Bewerbung Abgeschlossen</h1>
-                                <p className="text-gray-600">Vielen Dank für deine Einreichung</p>
+                                <h1 className="text-2xl font-bold text-gray-900">Marketing-Interview Abgeschlossen</h1> {/* Angepasster Titel */}
+                                <p className="text-gray-600">Vielen Dank für deine Teilnahme</p>
                             </div>
                         </div>
                         <Badge variant="outline" className="border-green-600 text-green-700 bg-green-50 font-medium">
@@ -58,10 +72,10 @@ export default function CompletionPage() {
                         <CheckCircle className={`transition-all duration-700 ${showSuccess ? "w-12 h-12 text-green-600" : "w-10 h-10 text-gray-400"}`} />
                     </div>
                     <h2 className={`text-3xl font-bold mt-4 transition-opacity duration-700 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Erfolgreich eingereicht!
+                        Marketing-Interview erfolgreich!
                     </h2>
                     <p className={`text-gray-600 mt-2 max-w-2xl mx-auto transition-opacity duration-700 delay-200 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Deine Bewerbung für den Impact Factory Accelerator wurde erfolgreich übermittelt. Unser Team wird dein Interview prüfen und sich bald bei dir melden.
+                        Dein Marketing-Interview für den Impact Factory Accelerator wurde erfolgreich übermittelt. Die Analyse läuft im Hintergrund.
                     </p>
                 </div>
 
@@ -96,14 +110,15 @@ export default function CompletionPage() {
                         </CardContent>
                     </Card>
                     
-                    {/* Zusammenfassung des Interviews */}
+                    {/* Zusammenfassung der Interviews */}
                     <div className="space-y-8">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Interview-Zusammenfassung</CardTitle>
-                                <CardDescription>Dein Gespräch wurde aufgezeichnet und wird nun analysiert.</CardDescription>
+                                <CardDescription>Alle deine Gespräche wurden aufgezeichnet und werden analysiert.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* Diese Karten repräsentieren die abgeschlossenen Interview-Typen */}
                                 <div className="text-left p-3 bg-blue-50 rounded-lg flex items-center space-x-3">
                                     <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center flex-shrink-0"><Cog className="w-5 h-5 text-blue-600" /></div>
                                     <div><h4 className="font-medium text-sm text-blue-900">Technologie-Reife</h4></div>
@@ -116,6 +131,14 @@ export default function CompletionPage() {
                                     <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center flex-shrink-0"><Target className="w-5 h-5 text-green-600" /></div>
                                     <div><h4 className="font-medium text-sm text-green-900">Impact-Reife</h4></div>
                                 </div>
+                                <div className="text-left p-3 bg-yellow-50 rounded-lg flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-yellow-100 rounded-md flex items-center justify-center flex-shrink-0"><DollarSign className="w-5 h-5 text-yellow-600" /></div>
+                                    <div><h4 className="font-medium text-sm text-yellow-900">Finanzierungs-Reife</h4></div>
+                                </div>
+                                <div className="text-left p-3 bg-red-50 rounded-lg flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-red-100 rounded-md flex items-center justify-center flex-shrink-0"><Megaphone className="w-5 h-5 text-red-600" /></div>
+                                    <div><h4 className="font-medium text-sm text-red-900">Marketing-Reife</h4></div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -123,8 +146,8 @@ export default function CompletionPage() {
 
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button onClick={() => router.push("/preparation_marketing")} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
-                        Zurück zum Dashboard
+                    <Button onClick={goToDashboard} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
+                        Zum Bewerbungs-Dashboard
                     </Button>
                     <Button variant="outline" onClick={() => window.open("mailto:applications@impactfactory.de", "_blank")} size="lg">
                         <Mail className="w-4 h-4 mr-2" />
@@ -138,31 +161,7 @@ export default function CompletionPage() {
                         Bewerbung eingereicht am {new Date().toLocaleDateString("de-DE", { year: "numeric", month: "long", day: "numeric" })}
                     </p>
                 </div>
-            {/* ElevenLabs Convai Widget */}
-            <div id="elevenlabs-convai-widget-container" />
-        </main>
-        {/* ElevenLabs Convai Widget Embed */}
-        <ScriptWidget />
-    </div>
+            </main>
+        </div>
     )
-}
-
-// Add this component at the end of the file
-function ScriptWidget() {
-    // Only load the script once on the client
-    useEffect(() => {
-        if (document.getElementById('elevenlabs-convai-script')) return;
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
-        script.async = true;
-        script.type = 'text/javascript';
-        script.id = 'elevenlabs-convai-script';
-        document.body.appendChild(script);
-
-        // Add the widget element
-        const widget = document.createElement('elevenlabs-convai');
-        widget.setAttribute('agent-id', 'UJcaKStMEPpXpzy9Uj5d');
-        document.getElementById('elevenlabs-convai-widget-container')?.appendChild(widget);
-    }, []);
-    return null;
 }

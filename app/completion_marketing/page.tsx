@@ -35,9 +35,9 @@ export default function CompletionPage() {
         // Hier können Sie zu Ihrem Haupt-Dashboard oder einer Anwendungsübersicht navigieren
         // Die applicationId kann bei Bedarf weitergegeben werden, z.B. zu einer Detailseite der Bewerbung
         if (applicationId) {
-            router.push(`/dashboard?applicationId=${applicationId}`); // Beispiel: Weiterleitung zu einem Dashboard mit der ID
+            router.push(`/preparation_finance?applicationId=${applicationId}`); // Beispiel: Weiterleitung zu einem Dashboard mit der ID
         } else {
-            router.push("/dashboard"); // Fallback, falls keine ID vorhanden ist
+            router.push("/preparation_finance"); // Fallback, falls keine ID vorhanden ist
         }
     };
 

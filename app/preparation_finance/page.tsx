@@ -79,7 +79,7 @@ export default function PreparationPage() {
         }
 
         // Weiterleitung zum Finanzierungs-Interview mit applicationId und interviewType
-        router.push(`/interview_finanzierung?applicationId=${applicationId}&interviewType=finanzierung`);
+        router.push(`/interview_finance?applicationId=${applicationId}&interviewType=finanzierung`);
     }
 
     return (

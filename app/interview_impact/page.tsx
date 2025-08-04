@@ -133,14 +133,14 @@ export default function InterviewPage() {
 
         if (!applicationId) {
             console.error("ERROR: applicationId fehlt in der URL. Die Analyse kann nicht durchgeführt werden.");
-            router.push(`/completion?${params.toString()}`);
+            router.push(`/completion_impact?${params.toString()}`);
             return;
         }
         
         // Überprüfung, ob das Transkript leer ist
         if (!transcript || transcript.length === 0) {
             console.warn("WARN: Transkript ist leer. Keine Analyse durchgeführt.");
-            router.push(`/completion?${params.toString()}`);
+            router.push(`/completion_impact?${params.toString()}`);
             return;
         }
         
@@ -155,7 +155,7 @@ export default function InterviewPage() {
         .catch(err => console.error("Error calling analyze-transcript:", err));
 
         // Leite sofort zur Abschlussseite weiter, da die Analyse im Hintergrund läuft
-        router.push(`/completion?${params.toString()}`);
+        router.push(`/completion_impact?${params.toString()}`);
     };
     
     return (
