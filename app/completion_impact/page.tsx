@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation" // useSearchParams importieren
-import Image from "next/image"
+import { useRouter } from "next/navigation"
+import Image from "next/image" // Hinzugefügt
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,9 +10,6 @@ import { CheckCircle, Clock, Mail, Calendar, Users, Cog, Target } from "lucide-r
 
 export default function CompletionPage() {
     const router = useRouter()
-    const searchParams = useSearchParams(); // Hook verwenden, um Query-Parameter zu lesen
-    const applicationId = searchParams.get("applicationId"); // application_id aus der URL holen
-    
     const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
@@ -23,18 +20,6 @@ export default function CompletionPage() {
 
         return () => clearTimeout(timer)
     }, [])
-    
-    // Die Logik für den "Zurück zum Dashboard" Button muss angepasst werden,
-    // um die application_id beizubehalten
-    const handleNextStep = () => {
-        if (applicationId) {
-            router.push(`/preparation_impact?applicationId=${applicationId}`);
-        } else {
-            // Optional: Handle the case where applicationId is missing
-            console.error("Application ID fehlt. Kann nicht zum nächsten Schritt leiten.");
-            router.push("/dashboard"); // Fallback-Route
-        }
-    };
 
     const nextSteps = [
         { title: "Prüfung der Bewerbung", description: "Unser Team prüft dein Interview und deine Unterlagen.", timeframe: "3-5 Werktage", icon: Clock },
@@ -138,8 +123,8 @@ export default function CompletionPage() {
 
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button onClick={handleNextStep} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
-                        Zur Vorbereitung des Impact-Interviews
+                    <Button onClick={() => router.push("/preparation_marketing")} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
+                        Zurück zum Dashboard
                     </Button>
                     <Button variant="outline" onClick={() => window.open("mailto:applications@impactfactory.de", "_blank")} size="lg">
                         <Mail className="w-4 h-4 mr-2" />
@@ -153,7 +138,31 @@ export default function CompletionPage() {
                         Bewerbung eingereicht am {new Date().toLocaleDateString("de-DE", { year: "numeric", month: "long", day: "numeric" })}
                     </p>
                 </div>
-            </main>
-        </div>
+            {/* ElevenLabs Convai Widget */}
+            <div id="elevenlabs-convai-widget-container" />
+        </main>
+        {/* ElevenLabs Convai Widget Embed */}
+        <ScriptWidget />
+    </div>
     )
+}
+
+// Add this component at the end of the file
+function ScriptWidget() {
+    // Only load the script once on the client
+    useEffect(() => {
+        if (document.getElementById('elevenlabs-convai-script')) return;
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+        script.async = true;
+        script.type = 'text/javascript';
+        script.id = 'elevenlabs-convai-script';
+        document.body.appendChild(script);
+
+        // Add the widget element
+        const widget = document.createElement('elevenlabs-convai');
+        widget.setAttribute('agent-id', 'UJcaKStMEPpXpzy9Uj5d');
+        document.getElementById('elevenlabs-convai-widget-container')?.appendChild(widget);
+    }, []);
+    return null;
 }

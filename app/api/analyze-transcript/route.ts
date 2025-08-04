@@ -2,21 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { transcript, applicationId } = await request.json();
-    if (!transcript || !applicationId) {
-      return NextResponse.json({ error: 'Missing transcript or applicationId' }, { status: 400 });
-    }
-
-    // Prepare prompt for Gemini
-    // Instruct Gemini to return a JSON object with:
-    // - Integer scores (1-10) for: team_kompetenz, team_dynamik, organisation, fuehrung, prozesse, kultur
-    // - Arrays of strings for:
-    //   - ai_staerken: strengths (list of strengths identified in the transcript)
-    //   - ai_verbesserungsbereiche: areas for improvement (list of weaknesses or areas to improve)
-    //   - ai_empfehlungen: recommendations (list of actionable recommendations)
-    const prompt = `Du bist ein erfahrener Gutachter für das Accelerator-Programm der Impact Factory. Deine Spezialisierung liegt in der Bewertung der Team- und Organisationsreife von Impact Startups, die sich für die Acceleration-Phase bewerben.
+// Definieren Sie die Konfigurationen für verschiedene Interview-Typen
+const INTERVIEW_CONFIGS = {
+    "team-reife": {
+        directusCollection: "applications",
+        prompt: (transcript) => `Du bist ein erfahrener Gutachter für das Accelerator-Programm der Impact Factory. Deine Spezialisierung liegt in der Bewertung der Team- und Organisationsreife von Impact Startups, die sich für die Acceleration-Phase bewerben.
 
 Deine Aufgabe ist es, das am Ende dieses Prompts eingefügte Interview-Transkript eines Bewerber-Startups sorgfältig zu analysieren. Basierend auf deiner Analyse und der untenstehenden Wissensbasis sollst du ein JSON-Objekt erstellen, das die Reife des Startups bewertet.
 
@@ -125,7 +115,7 @@ JSON
     "Es existiert eine klare Rollenverteilung, effektive, transparente Entscheidungsprozesse und eine starke, von allen getragene Führung.",
     "Die Unternehmenskultur ist fest verankert und die gelebten Werte spiegeln authentisch die Impact-Mission des Startups wider, was eine hohe intrinsische Motivation schafft.",
     "Die Organisation ist mit vorausschauend implementierten Strukturen und Prozessen (z.B. für Finanzen, Onboarding, Projektmanagement) bereits für die nächste Wachstumsphase gerüstet.",
-    "Ein aktives Netzwerk aus Mentoren und Beratern wird strategisch genutzt, um Kompetenzlücken zu schließen und die Qualität von Entscheidungen zu verbessern.",
+    "Ein aktives Netzwerk aus Mentoren und Beratern schließt Kompetenzlücken und wird regelmäßig genutzt.",
     "Das Team hat seine Resilienz und Lernfähigkeit bereits in der Vergangenheit unter Beweis gestellt, indem es Herausforderungen gemeistert und sich an neue Gegebenheiten angepasst hat."
   ],
   "ai_verbesserungsbereiche": [
@@ -141,71 +131,252 @@ JSON
 }
 
 Zu analysierendes Transkript:
+${JSON.stringify(transcript, null, 2)}`,
+        fields: [
+            "team_kompetenz", "team_dynamik", "organisation", "fuehrung", "prozesse", "kultur",
+            "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
+        ],
+    },
+    "impact": {
+        directusCollection: "impact", // Hier wird die neue Collection definiert
+        prompt: (transcript) => `Du bist ein erfahrener Gutachter für das Accelerator-Programm der Impact Factory. Deine Spezialisierung liegt in der Bewertung der Impact-Reife von Startups.
 
+Deine Aufgabe ist es, das am Ende dieses Prompts eingefügte Interview-Transkript eines Bewerber-Startups sorgfältig zu analysieren. Basierend auf deiner Analyse sollst du ein JSON-Objekt erstellen, das die Impact-Reife des Startups bewertet.
 
-${JSON.stringify(transcript, null, 2)}`;
+Gib ausschließlich das JSON-Objekt zurück. Füge keine Erklärungen, Einleitungen oder Kommentare hinzu.
 
-    // Call Gemini
-    const geminiRes = await fetch(GEMINI_API_URL + `?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      }
-    );
-    const geminiData = await geminiRes.json();
-    console.log('Gemini raw response:', geminiData);
+Anweisungen zur Erstellung des JSON-Objekts
 
-    // Extract JSON from Gemini response
-    type Scores = {
-      team_kompetenz?: number;
-      team_dynamik?: number;
-      organisation?: number;
-      fuehrung?: number;
-      prozesse?: number;
-      kultur?: number;
-      ai_staerken?: string[];
-      ai_verbesserungsbereiche?: string[];
-      ai_empfehlungen?: string[];
-      [key: string]: unknown;
-    };
-    let scores: Scores = {};
+Bewerte die folgenden Bereiche auf einer Skala von 1 bis 100, basierend auf den Informationen aus dem Transkript.
+- mission_sdg_fit (1-100): Wie stark ist die Verbindung zwischen der Mission des Startups und den UN-Nachhaltigkeitszielen (SDGs)?
+- theory_of_change (1-100): Wie klar und nachvollziehbar ist die Theorie des Wandels des Startups?
+- kpi_and_data (1-100): Wie gut sind die wichtigsten Impact-KPIs definiert und werden die Daten systematisch erfasst?
+- imm_process (1-100): Gibt es einen etablierten Prozess für Impact Measurement and Management?
+- reporting_communication (1-100): Wie transparent und effektiv ist die Kommunikation über den erzielten Impact?
+- continuous_improvement (1-100): Wie wird der Impact-Messprozess kontinuierlich verbessert?
+
+Zusätzlich erstelle die folgenden Arrays mit prägnanten, aussagekräftigen Zeichenketten in deutscher Sprache:
+- ai_staerken (Array of Strings): Liste 3-5 konkrete und belegbare Stärken auf, die du im Transkript identifiziert hast.
+- ai_verbesserungsbereiche (Array of Strings): Liste 2-3 zentrale Schwächen, Risiken oder Kompetenzlücken auf.
+- ai_empfehlungen (Array of Strings): Gib 2-3 klare, umsetzbare Handlungsempfehlungen, die direkt auf die identifizierten Verbesserungsbereiche eingehen.
+
+Zu analysierendes Transkript:
+${JSON.stringify(transcript, null, 2)}`,
+        fields: [
+            "mission_sdg_fit", "theory_of_change", "kpi_and_data",
+            "imm_process", "reporting_communication", "continuous_improvement",
+            "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
+        ],
+    },
+    "finanzierung": { // Neuer Eintrag für das Finanzierungs-Interview
+        directusCollection: "financing", // Die Collection, die Sie erstellt haben
+        prompt: (transcript) => `Du bist ein erfahrener Gutachter für das Accelerator-Programm der Impact Factory. Deine Spezialisierung liegt in der Bewertung der Finanzierungsreife von Impact Startups, die sich für die Acceleration-Phase bewerben.
+
+Deine Aufgabe ist es, das am Ende dieses Prompts eingefügte Interview-Transkript eines Bewerber-Startups sorgfältig zu analysieren. Basierend auf deiner Analyse und der untenstehenden Wissensbasis sollst du ein JSON-Objekt erstellen, das die Finanzierungsreife des Startups bewertet.
+
+Gib ausschließlich das JSON-Objekt zurück. Füge keine Erklärungen, Einleitungen oder Kommentare hinzu.
+
+Wissensbasis und Bewertungsrahmen für Finanzierungsreife:
+
+Ein Startup mit idealer Finanzierungsreife verkörpert Folgendes:
+- Klare Finanzierungsstrategie: Bewusste Entscheidung für/gegen Venture Case, definierter Kapitalbedarf (12-18 Monate) und klare Ziele für die Runde.
+- Intelligenter Kapitalmix: Begründete Auswahl aus Equity, Fremdkapital, Blended Finance, Förder- und philanthropischen Mitteln.
+- Fundiertes Finanzmodell: Bottom-Up Forecast, Szenarienanalyse, Kenntnis wichtiger Finanz-KPIs (MRR, Burn Rate, CAC, LTV, Cash Runway).
+- Wirkungsmessung & Reporting: Messung des gesellschaftlichen Impacts nach IRIS+, GIIRS oder EVPA-Rahmenwerk, regelmäßiges Wirkungsreporting an Investoren.
+- Sauberes Cap Table Setup: Keine Dead Equity, Gründerteam hält noch über 80% der Anteile, aktives Cap Table Management.
+- Investor Alignment: Klare Vorstellung von passenden Impact-Investoren und Kapitalgebern.
+- Post-Raising & Exit-Strategie: Strukturierte Meilensteinplanung, Follow-Up-Runden-Vorbereitung, realistische Exit-Strategie.
+- Risikobewältigung: Erkennen von Risiken für die Finanzierungsstrategie und klare Maßnahmen zu deren Bewältigung.
+
+Anweisungen zur Erstellung des JSON-Objekts
+
+1. Bewertung der numerischen Scores (1-100):
+
+Bewerte die folgenden Bereiche auf einer Skala von 1 bis 100, basierend auf den Informationen aus dem Transkript und dem oben definierten Idealprofil.
+
+- financing_strategy_score (1-100): Wie klar und fundiert ist die Finanzierungsstrategie für die nächsten 18 Monate?
+- capital_mix_score (1-100): Wie passend ist der geplante Kapitalmix und wie gut ist er begründet?
+- financial_kpis_score (1-100): Wie gut werden Finanz-KPIs zur Steuerung genutzt und ist der Finanzplan fundiert?
+- impact_kpis_score (1-100): Wie systematisch wird der Impact gemessen und berichtet?
+- cap_table_score (1-100): Wie sauber ist die Cap Table Struktur und das Management?
+- investor_alignment_score (1-100): Wie klar ist die Vorstellung von passenden Investoren und deren Ansprache?
+- risk_strategy_score (1-100): Wie gut werden Risiken für die Finanzierungsstrategie erkannt und adressiert?
+
+Verwende die folgende Skala als Richtlinie:
+    81-100 (Exzellent): Entspricht dem Idealprofil. Kaum Schwächen erkennbar.
+    61-80 (Gut): Starke Grundlagen sind vorhanden, aber noch Entwicklungspotenzial.
+    41-60 (Solide): Basis erkennbar, aber signifikante Lücken.
+    21-40 (Ausbaufähig): Grundlegende Elemente fehlen.
+    1-20 (Mangelhaft): Kritische Schwächen in fast allen Bereichen.
+
+2. Erstellung der Text-Arrays:
+
+Fülle die folgenden Arrays mit prägnanten, aussagekräftigen Zeichenketten in deutscher Sprache.
+
+- ai_staerken (Array of Strings): Liste 3-5 konkrete und belegbare Stärken auf, die du im Transkript identifiziert hast.
+- ai_verbesserungsbereiche (Array of Strings): Liste 2-3 zentrale Schwächen oder Risiken.
+- ai_empfehlungen (Array of Strings): Gib 2-3 klare, umsetzbare Handlungsempfehlungen.
+
+Zu analysierendes Transkript:
+${JSON.stringify(transcript, null, 2)}`,
+        fields: [
+            "financing_strategy_score", "capital_mix_score", "financial_kpis_score",
+            "impact_kpis_score", "cap_table_score", "investor_alignment_score", "risk_strategy_score",
+            "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
+        ],
+    },
+    "marketing": { // Neuer Eintrag für das Marketing-Interview
+        directusCollection: "marketing", // Die Collection, die Sie erstellt haben
+        prompt: (transcript) => `Du bist ein erfahrener Gutachter für das Accelerator-Programm der Impact Factory. Deine Spezialisierung liegt in der Bewertung der Marketingreife von Impact Startups, die sich für die Acceleration-Phase bewerben.
+
+Deine Aufgabe ist es, das am Ende dieses Prompts eingefügte Interview-Transkript eines Bewerber-Startups sorgfältig zu analysieren. Basierend auf deiner Analyse und der untenstehenden Wissensbasis sollst du ein JSON-Objekt erstellen, das die Marketingreife des Startups bewertet.
+
+Gib ausschließlich das JSON-Objekt zurück. Füge keine Erklärungen, Einleitungen oder Kommentare hinzu.
+
+Wissensbasis und Bewertungsrahmen für Marketingreife:
+
+Ein Startup mit idealer Marketingreife verkörpert Folgendes:
+- Klare Purpose-Kommunikation: Die Mission und Werte des Startups werden klar, authentisch und überzeugend kommuniziert (z.B. Golden Circle, Storytelling).
+- Präzise Marktpositionierung: Das Startup hat seinen Zielmarkt segmentiert, die Zielgruppen klar definiert und sich einzigartig positioniert (STP-Modell).
+- Effektive Wachstumsstrategien: Es werden datengetriebene Experimente und schnelle Iterationen zur Nutzergewinnung und -bindung eingesetzt (Growth Hacking, Pirate Metrics).
+- Ganzheitlicher Marketing-Mix: Alle Aspekte des Angebots (Produkt, Preis, Vertrieb, Kommunikation, Menschen, Prozesse, physische Nachweise) werden systematisch und kundenorientiert betrachtet (7Ps).
+- Starke Wettbewerbsdifferenzierung: Das Startup hebt sich klar vom Wettbewerb ab, idealerweise durch die Schaffung neuer, unbestrittener Märkte (Blue Ocean Strategy).
+- Datengetriebene Analyse: Marketingaktivitäten werden kontinuierlich durch die Analyse relevanter Metriken und Diagnoseinstrumente verbessert.
+- Authentische Markenführung: Die Marke ist glaubwürdig und baut langfristiges Vertrauen auf, indem sie ihre Werte konsequent lebt.
+
+Anweisungen zur Erstellung des JSON-Objekts:
+
+1. Bewertung der numerischen Scores (1-100):
+
+Bewerte die folgenden Bereiche auf einer Skala von 1 bis 100, basierend auf den Informationen aus dem Transkript und dem oben definierten Idealprofil.
+
+- purpose_communication_score (1-100): Wie klar und überzeugend wird die Mission kommuniziert?
+- market_positioning_score (1-100): Wie präzise ist die Marktsegmentierung und Positionierung?
+- growth_strategy_score (1-100): Wie effektiv sind die Wachstumsstrategien und die Experimentierkultur?
+- marketing_mix_score (1-100): Wie ganzheitlich und kundenorientiert ist der Marketing-Mix?
+- competitive_differentiation_score (1-100): Wie stark ist die Wettbewerbsdifferenzierung und Innovationsfähigkeit?
+- data_analytics_score (1-100): Wie gut werden Daten zur Marketingoptimierung genutzt?
+- brand_authenticity_score (1-100): Wie authentisch und vertrauenswürdig ist die Markenführung?
+
+Verwende die folgende Skala als Richtlinie:
+    81-100 (Exzellent): Entspricht dem Idealprofil. Kaum Schwächen erkennbar.
+    61-80 (Gut): Starke Grundlagen sind vorhanden, aber noch Entwicklungspotenzial.
+    41-60 (Solide): Basis erkennbar, aber signifikante Lücken.
+    21-40 (Ausbaufähig): Grundlegende Elemente fehlen.
+    1-20 (Mangelhaft): Kritische Schwächen in fast allen Bereichen.
+
+2. Erstellung der Text-Arrays:
+
+Fülle die folgenden Arrays mit prägnanten, aussagekräftigen Zeichenketten in deutscher Sprache.
+
+- ai_staerken (Array of Strings): Liste 3-5 konkrete und belegbare Stärken auf, die du im Transkript identifiziert hast.
+- ai_verbesserungsbereiche (Array of Strings): Liste 2-3 zentrale Schwächen oder Risiken.
+- ai_empfehlungen (Array of Strings): Gib 2-3 klare, umsetzbare Handlungsempfehlungen.
+
+Zu analysierendes Transkript:
+${JSON.stringify(transcript, null, 2)}`,
+        fields: [
+            "purpose_communication_score", "market_positioning_score", "growth_strategy_score",
+            "marketing_mix_score", "competitive_differentiation_score", "data_analytics_score",
+            "brand_authenticity_score",
+            "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
+        ],
+    },
+};
+
+export async function POST(request: NextRequest) {
     try {
-      const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      scores = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    } catch {
-      return NextResponse.json({ error: 'Failed to parse Gemini response', geminiData }, { status: 500 });
+        const { transcript, applicationId } = await request.json();
+        if (!transcript || !applicationId) {
+            return NextResponse.json({ error: 'Missing transcript or applicationId' }, { status: 400 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const interviewType = searchParams.get("type") || "team-reife";
+
+        const config = INTERVIEW_CONFIGS[interviewType];
+        if (!config) {
+            return NextResponse.json({ error: 'Invalid interview type' }, { status: 400 });
+        }
+
+        // Dynamischer Prompt-Aufbau
+        const finalPrompt = config.prompt(transcript);
+
+        // Gemini-API-Aufruf
+        const geminiRes = await fetch(GEMINI_API_URL + `?key=${process.env.GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: finalPrompt }] }]
+                })
+            }
+        );
+        const geminiData = await geminiRes.json();
+        console.log('Gemini raw response:', geminiData);
+
+        // Extract JSON from Gemini response
+        let scores: { [key: string]: unknown } = {};
+        try {
+            const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            scores = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+        } catch {
+            console.error('Failed to parse Gemini response:', geminiData);
+            return NextResponse.json({ error: 'Failed to parse Gemini response' }, { status: 500 });
+        }
+
+        // Prepare the payload for Directus dynamically
+        const directusPayload: { [key: string]: unknown } = {
+            transcript: transcript
+        };
+        config.fields.forEach(field => {
+            if (scores[field] !== undefined) {
+                directusPayload[field] = scores[field];
+            }
+        });
+        
+        // Füge die applications_id zur Payload hinzu, falls es eine neue Collection ist
+        if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing") {
+             directusPayload.applications_id = applicationId;
+        }
+
+        const directusToken = process.env.NEXT_PUBLIC_DIRECTUS_TOKEN || process.env.DIRECTUS_STATIC_TOKEN;
+
+        // Je nach Interview-Typ wird entweder eine bestehende Anwendung aktualisiert (PATCH)
+        // oder ein neuer Eintrag in der spezifischen Collection erstellt (POST)
+        let directusRes;
+        if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing") {
+            const directusUrl = `${process.env.NEXT_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL}/items/${config.directusCollection}`;
+            directusRes = await fetch(directusUrl, {
+                method: 'POST', // POST für das Erstellen eines neuen Eintrags
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${directusToken}`
+                },
+                body: JSON.stringify(directusPayload)
+            });
+        } else {
+            const directusUrl = `${process.env.NEXT_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL}/items/applications/${applicationId}`;
+            directusRes = await fetch(directusUrl, {
+                method: 'PATCH', // PATCH für die Aktualisierung eines bestehenden Eintrags
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${directusToken}`
+                },
+                body: JSON.stringify(directusPayload)
+            });
+        }
+        
+        const directusData = await directusRes.json();
+        console.log('Directus response:', directusData);
+
+        if (!directusRes.ok) {
+            return NextResponse.json({ error: 'Failed to write to Directus', directusData }, { status: directusRes.status });
+        }
+
+        return NextResponse.json({ scores, directus: directusData, gemini: geminiData });
+    } catch (error) {
+        console.error('Error in /api/analyze-transcript:', error);
+        return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
-
-    // Patch scores and AI analysis fields to Directus
-    const directusUrl = `${process.env.NEXT_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL}/items/applications/${applicationId}`;
-    const directusToken = process.env.NEXT_PUBLIC_DIRECTUS_TOKEN || process.env.DIRECTUS_STATIC_TOKEN;
-    const directusRes = await fetch(directusUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${directusToken}`
-      },
-      body: JSON.stringify({
-        team_kompetenz: scores.team_kompetenz,
-        team_dynamik: scores.team_dynamik,
-        organisation: scores.organisation,
-        fuehrung: scores.fuehrung,
-        prozesse: scores.prozesse,
-        kultur: scores.kultur,
-        ai_staerken: scores.ai_staerken, // array of strengths
-        ai_verbesserungsbereiche: scores.ai_verbesserungsbereiche, // array of areas for improvement
-        ai_empfehlungen: scores.ai_empfehlungen // array of recommendations
-      })
-    });
-    const directusData = await directusRes.json();
-    console.log('Directus patch response:', directusData);
-
-    return NextResponse.json({ scores, directus: directusData, gemini: geminiData });
-  } catch (error) {
-    console.error('Error in /api/analyze-transcript:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
-  }
-} 
+}
