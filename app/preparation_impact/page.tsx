@@ -12,56 +12,62 @@ import { CheckCircle, Lightbulb, Target, Users, Cog, ArrowRight, Info } from "lu
 export default function PreparationPage() {
     const router = useRouter()
     const searchParams = useSearchParams();
-    const applicationId = searchParams.get("applicationId"); // Auslesen der ID
+    const applicationId = searchParams.get("applicationId");
     const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
     const [isReady, setIsReady] = useState(false)
 
-    // ... (restlicher Code für readinessAreas und preparationChecklist)
+    // --- KORRIGIERTE TEXTE START ---
+
     const readinessAreas = [
         {
-            icon: Cog,
-            title: "Technologie-Reife",
-            description: "Eure Produktentwicklung und technische Reife",
+            icon: Target,
+            title: "Strategie & Wirkungslogik",
+            description: "Die strategische Grundlage eures Impacts: Vom großen Ziel zur konkreten Wirkungskette.",
             topics: [
-                "Aktueller Entwicklungsstand (MVP, Prototyp, marktreif)",
-                "Technische Hürden und wie ihr sie gemeistert habt",
-                "Skalierbarkeit eurer technischen Lösung",
-                "Geistiges Eigentum und Patente",
+                "Verankerung der Mission und klare Zuordnung zu den UN SDGs",
+                "Ausgearbeitete Theory of Change (ToC) als Basis der Wirkungslogik",
+                "Definition von Inputs, Outputs, Outcomes und langfristigem Impact",
+                "Identifikation und Überprüfung eurer wichtigsten Wirkungsannahmen",
+            ],
+        },
+        {
+            icon: Cog,
+            title: "Messung & Analyse der Wirkung",
+            description: "Wie ihr euren sozialen oder ökologischen Fußabdruck quantifiziert und bewertet.",
+            topics: [
+                "Definition von Kern-KPIs (Output, Outcome, Impact) entlang der ToC",
+                "Anwendung von SROI zur Monetarisierung sozialer Wirkung (für soziale Modelle)",
+                "Nutzung von Life Cycle Assessment (LCA) zur Messung ökologischer Wirkung (für Umweltmodelle)",
+                "Auswahl von Kennzahlen aus anerkannten Standards (z.B. IRIS+)",
             ],
         },
         {
             icon: Users,
-            title: "Team & Organisation",
-            description: "Eure Teamzusammensetzung und Organisationsstruktur",
+            title: "Management & Kommunikation",
+            description: "Wie ihr Wirkung steuert, in Entscheidungen integriert und transparent berichtet.",
             topics: [
-                "Teamaufstellung und Kernkompetenzen",
-                "Bisherige Erfahrung und Erfolge",
-                "Rollenverteilung und wie ihr Entscheidungen trefft",
-                "Unternehmenskultur und gemeinsame Werte",
-            ],
-        },
-        {
-            icon: Target,
-            title: "Impact-Reife",
-            description: "Eure sozialen und ökologischen Wirkungsziele",
-            topics: [
-                "Klare Impact-Mission und Wirkungslogik (Theory of Change)",
-                "Zielgruppen und Validierung des Problems",
-                "Wirkungsmessung und KPIs",
-                "Bezug zu den UN SDGs oder ähnlichen Rahmenwerken",
+                "Nutzung von Management-Frameworks wie dem IMMPACT Model zur Selbsteinschätzung",
+                "Implementierung eines kontinuierlichen Verbesserungs-Kreislaufs (Messen → Lernen → Steuern)",
+                "Systematische Datenerhebung und Aufbau eines Wirkungs-Dashboards",
+                "Transparentes Reporting der Wirkung an Stakeholder (Investoren, Kunden)",
             ],
         },
     ]
 
     const preparationChecklist = [
-        "Ich habe unsere Mission und Wirkungsziele verinnerlicht",
-        "Ich kann unseren aktuellen Entwicklungsstand klar erklären",
-        "Ich kenne die Stärken und Schwächen unseres Teams",
-        "Ich habe über unseren Zielmarkt und unsere Zielgruppen nachgedacht",
-        "Ich kann unser Geschäftsmodell und unsere Einnahmequellen besprechen",
-        "Ich habe mir unsere Wettbewerbsvorteile überlegt",
-        "Ich bin bereit, über gemeisterte Herausforderungen zu sprechen",
+        "Ich kann unsere Mission und die Anbindung an die SDGs klar erläutern.",
+        "Ich kann unsere Theory of Change (Wirkungslogik) vorstellen.",
+        "Ich kann unsere wichtigsten Impact-KPIs (Output, Outcome, Impact) benennen.",
+        "Ich kann beschreiben, wie wir unsere Wirkungsdaten erheben und deren Qualität sicherstellen.",
+        "Ich kann ein Beispiel nennen, wo Impact-Daten unsere Strategie beeinflusst haben.",
+        "Ich kann erklären, wie wir unsere Wirkung an Stakeholder kommunizieren.",
+        "Ich bin bereit, über die für IMM zuständige Person und die investierten Ressourcen zu sprechen.",
+        "Ich habe über Wirkungsrisiken (z.B. Rebound-Effekte) nachgedacht und wie wir ihnen begegnen.",
     ]
+
+    const introText = "In diesem Gespräch wollen wir euer Verständnis und die Umsetzung von Impact Measurement & Management (IMM) beleuchten. Das KI-gestützte Interview hilft uns einzuschätzen, wie tief die Wirkungsorientierung in eurer Strategie, euren Prozessen und eurer Kultur verankert ist."
+
+    // --- KORRIGIERTE TEXTE ENDE ---
 
     const handleCheckboxChange = (index: number, checked: boolean) => {
         const newCheckedItems = { ...checkedItems, [index]: checked }
@@ -71,21 +77,13 @@ export default function PreparationPage() {
     }
     
     const handleStartInterview = () => {
-        // Sicherstellen, dass die applicationId vorhanden ist
         if (!applicationId) {
             console.error("Application ID fehlt in der URL. Kann das Interview nicht starten.");
-            // Optional: Leite den Benutzer auf eine Fehler- oder Übersichtsseite um
             router.push("/");
             return;
         }
-
-        // Korrigierte Weiterleitung:
-        // Die Route ist jetzt dynamisch und übergibt sowohl die applicationId als auch den interviewType.
-        // `interview_impact` ist der Name Ihrer neuen Interview-Seite, und `type=impact` ist der Parameter für die API.
         router.push(`/interview_impact?applicationId=${applicationId}&interviewType=impact`);
     }
-
-    // ... (Restlicher JSX-Code bleibt unverändert)
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -103,7 +101,7 @@ export default function PreparationPage() {
                                 />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Interview-Vorbereitung</h1>
+                                <h1 className="text-2xl font-bold text-gray-900">Impact-Vorbereitung</h1>
                                 <p className="text-gray-600">Mach dich bereit für dein KI-Interview</p>
                             </div>
                         </div>
@@ -124,12 +122,12 @@ export default function PreparationPage() {
                             <span>Über das Interview</span>
                         </CardTitle>
                         <CardDescription>
-                            Unser KI-Interviewer bewertet dein Startup in drei Kernbereichen.
+                            Unser KI-Interviewer bewertet eure Reife im Bereich Impact Measurement & Management (IMM).
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-gray-700 mb-4">
-                            In unserem Bewerbungsprozess wollen wir verstehen, wie startklar dein Startup in den Bereichen Technologie, Team & Organisation und Impact ist. Das KI-gestützte Gespräch hilft uns dabei, eure Reife und euer Potenzial einzuschätzen.
+                            {introText}
                         </p>
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

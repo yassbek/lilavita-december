@@ -7,60 +7,62 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckCircle, Lightbulb, Megaphone, BarChart, Gem, ArrowRight, Info } from "lucide-react" // Icons angepasst
+import { CheckCircle, Lightbulb, Megaphone, BarChart, Gem, ArrowRight, Info } from "lucide-react"
 
 export default function PreparationPage() {
     const router = useRouter()
     const searchParams = useSearchParams();
-    const applicationId = searchParams.get("applicationId"); // Auslesen der ID
+    const applicationId = searchParams.get("applicationId");
     const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
     const [isReady, setIsReady] = useState(false)
 
     const readinessAreas = [
         {
-            icon: Megaphone, // Angepasstes Icon
+            icon: Megaphone,
             title: "Purpose & Positionierung",
-            description: "Eure Mission, Werte und die Abgrenzung im Markt",
+            description: "Die Basis eures Impact-Marketings: Euer 'Warum', eure Zielgruppe und eure einzigartige Geschichte.",
             topics: [
-                "Klare Kommunikation eurer Impact-Mission und Werte (Warum, Wie, Was)",
-                "Marktsegmentierung und Definition der Zielgruppen (STP-Modell)",
-                "Einzigartiges Wertangebot und Positionierung im Wettbewerb",
-                "Storytelling-Ansätze und Authentizität eurer Marke",
+                "Kommunikation eurer Mission nach dem Golden Circle (Warum, Wie, Was)",
+                "Definition eures Wertversprechens mit dem Value Proposition Canvas",
+                "Markt-Segmentierung, Targeting und Positionierung (STP-Modell)",
+                "Nutzung von Storytelling zur Schaffung einer emotionalen Markenbindung",
             ],
         },
         {
-            icon: BarChart, // Angepasstes Icon
+            icon: BarChart,
             title: "Wachstum & Kanäle",
-            description: "Eure Strategien zur Nutzergewinnung und -bindung",
+            description: "Wie ihr datengetrieben experimentiert, um eure Zielgruppen effektiv zu erreichen und zu binden.",
             topics: [
-                "Einsatz von datengetriebenen Experimenten (Growth Hacking)",
-                "Messung der Nutzerreise (Pirate Metrics: AARRR)",
-                "Nutzung digitaler Marketingkanäle (SEO, Social Media, E-Mail)",
-                "Kundenakquisitionskosten (CAC) und Customer Lifetime Value (CLV)",
+                "Anwendung von Growth Hacking-Zyklen für schnelles, budgetschonendes Wachstum",
+                "Analyse des Nutzer-Funnels mit Pirate Metrics (AARRR) zur Identifikation von Schwachstellen",
+                "Aufbau von Kommunikations-Funnels nach dem AIDA-Prinzip (Attention, Interest, Desire, Action)",
+                "Steuerung des Marketing-Budgets über Unit Economics (CAC vs. CLV)",
             ],
         },
         {
-            icon: Gem, // Angepasstes Icon
+            icon: Gem,
             title: "Marketing-Mix & Analyse",
-            description: "Ganzheitliche Marketingplanung und Diagnoseinstrumente",
+            description: "Der ganzheitliche Blick auf eure Marketing-Aktivitäten und strategische Chancen.",
             topics: [
-                "Betrachtung aller 7 Ps des Marketing-Mix (Produkt, Preis, Place, Promotion, People, Process, Physical Evidence)",
-                "Differenzierung vom Wettbewerb und Schaffung neuer Märkte (Blue Ocean Strategy)",
-                "Einsatz von Diagnose-Tools zur Marketing-Analyse (z.B. SWOT, BMC, BIA)",
-                "Kontinuierliche Verbesserung durch Daten und Feedback",
+                "Ganzheitliche Planung aller 7 Ps des Marketing-Mix (von Product bis Physical Evidence)",
+                "Analyse des Wettbewerbs und Entwicklung einer Blue Ocean Strategy zur Schaffung neuer Märkte",
+                "Standortbestimmung durch Diagnose-Tools (z.B. SWOT, Business Model Canvas, B Impact Assessment)",
+                "Ableitung von strategischen Handlungsfeldern aus den Analyse-Ergebnissen",
             ],
         },
     ]
 
     const preparationChecklist = [
-        "Ich kann unsere Impact-Mission und Werte überzeugend kommunizieren.",
-        "Ich habe eine klare Vorstellung von unseren Zielgruppen und unserer Marktpositionierung.",
-        "Ich bin bereit, über unsere Wachstumsstrategien und bisherige Erfolge zu sprechen.",
-        "Ich kenne die wichtigsten Marketing-Kanäle, die wir nutzen oder nutzen wollen.",
-        "Ich kann unseren Marketing-Mix (Produkt, Preis, Vertrieb, Kommunikation, etc.) erläutern.",
-        "Ich habe über unsere Wettbewerbsvorteile und Differenzierungsmerkmale nachgedacht.",
-        "Ich bin bereit, über die Messung unserer Marketingaktivitäten und die Nutzung von Daten zu sprechen.",
+        "Ich kann unser 'Warum' klar formulieren und weiß, wie wir unsere Story erzählen.",
+        "Ich habe eine klare Vorstellung unserer Zielsegmente und unserer Positionierung darin (STP).",
+        "Ich bin bereit, über unsere Experimente zur Wachstumssteigerung (Growth Hacking) zu sprechen.",
+        "Ich kenne die wichtigsten Stufen unseres Nutzer-Funnels (AARRR) und deren Kennzahlen.",
+        "Ich kann erläutern, wie die 7 Ps in unserer Marketingstrategie zusammenspielen.",
+        "Ich habe darüber nachgedacht, wo wir uns vom Wettbewerb abheben und neue Chancen (Blue Ocean) schaffen können.",
+        "Ich habe eine Einschätzung, wo die Stärken und Schwächen unseres aktuellen Marketings liegen (z.B. via SWOT).",
     ]
+
+    const introText = "In diesem Gespräch wollen wir verstehen, wie ihr eure Mission durch Marketing sichtbar macht und Wachstum erzielt. Das KI-gestützte Interview hilft uns, eure Marketingreife anhand bewährter Frameworks einzuschätzen und euren Unterstützungsbedarf zu identifizieren."
 
     const handleCheckboxChange = (index: number, checked: boolean) => {
         const newCheckedItems = { ...checkedItems, [index]: checked }
@@ -70,14 +72,11 @@ export default function PreparationPage() {
     }
     
     const handleStartInterview = () => {
-        // Sicherstellen, dass die applicationId vorhanden ist
         if (!applicationId) {
             console.error("Application ID fehlt in der URL. Kann das Interview nicht starten.");
-            router.push("/"); // Fallback-Route
+            router.push("/");
             return;
         }
-
-        // Weiterleitung zum Marketing-Interview mit applicationId und interviewType
         router.push(`/interview_marketing?applicationId=${applicationId}&interviewType=marketing`);
     }
 
@@ -97,7 +96,7 @@ export default function PreparationPage() {
                                 />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Marketing-Vorbereitung</h1> {/* Angepasster Titel */}
+                                <h1 className="text-2xl font-bold text-gray-900">Marketing-Vorbereitung</h1>
                                 <p className="text-gray-600">Mach dich bereit für dein KI-Interview</p>
                             </div>
                         </div>
@@ -123,7 +122,7 @@ export default function PreparationPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-gray-700 mb-4">
-                            In diesem Gespräch wollen wir deine Marketingstrategie, deine Zielgruppenansprache und deine Wachstumspläne verstehen. Das KI-gestützte Interview hilft uns, eure Marketingreife einzuschätzen.
+                            {introText}
                         </p>
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

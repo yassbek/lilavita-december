@@ -7,71 +7,76 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckCircle, Lightbulb, TrendingUp, Users, Handshake, Briefcase, ArrowRight, Info } from "lucide-react" // Icons angepasst
+import { CheckCircle, Lightbulb, TrendingUp, Users, Handshake, Briefcase, ArrowRight, Info, Megaphone } from "lucide-react" // Megaphone als neues Icon hinzugefügt, falls verfügbar, sonst Lightbulb
 
 export default function PreparationPage() {
     const router = useRouter()
     const searchParams = useSearchParams();
-    const applicationId = searchParams.get("applicationId"); // Auslesen der ID
+    const applicationId = searchParams.get("applicationId");
     const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
     const [isReady, setIsReady] = useState(false)
 
+    // --- ANGEPASSTE TEXTE START ---
+
     const readinessAreas = [
         {
-            icon: TrendingUp, // Angepasstes Icon
+            icon: TrendingUp,
             title: "Wachstumsstrategie & Planung",
-            description: "Eure Roadmap für Wachstum, GTM und Markterweiterung",
+            description: "Eure Vision, Roadmap und die strategische Validierung eures Vorhabens.",
             topics: [
-                "Detaillierte Wachstumsstrategie für die nächsten 2-3 Jahre",
-                "Elemente der Wachstumsstrategie (Produkt, Service, Zielgruppen, Märkte)",
-                "Go-to-Market (GTM) Strategie und Optimierungsmaßnahmen",
-                "Analyse und Erschließung neuer Märkte und Kundensegmente",
+                "Wachstumsstrategie für 2-3 Jahre inkl. Produkt, Märkte & Partnerschaften",
+                "Go-to-Market (GTM) Strategie und deren Validierung (z.B. durch MVPs, Piloten)",
+                "Strategie zur Erschließung neuer Märkte und Kundensegmente",
+                "Prozesse für Portfolio-Management und Product-Market-Fit Validierung",
             ],
         },
         {
-            icon: Users, // Angepasstes Icon
-            title: "Kundenakquise & -bindung",
-            description: "Maßnahmen zur Neukundengewinnung und Kundenbindung",
+            icon: Lightbulb, // Passendes Icon für Marketing & Ideen
+            title: "Marketing & Positionierung",
+            description: "Wie ihr euren Impact kommuniziert und gezielt Kunden gewinnt.",
             topics: [
-                "Aktuelle Maßnahmen zur Kundengewinnung und deren Erfolge/Schwierigkeiten",
-                "Maßnahmen zur Kundenbindung und deren Wirksamkeitsmessung",
-                "Größte Hürden in der Kundenbindung",
-                "Customer Value Proposition (CVP) Formulierung und Tests",
+                "Formulierung und Test der Customer Value Proposition (CVP)",
+                "Impact Marketing-Strategie und Erfolgsmessung (z.B. Storytelling, SDGs)",
+                "Nutzung von Multikanal-Marketing (Inbound, Outbound, Partner)",
+                "Einsatz von Performance Marketing & Growth Hacking Methoden",
             ],
         },
         {
-            icon: Briefcase, // Angepasstes Icon
-            title: "Vertriebsprozesse & Skalierung",
-            description: "Euer Sales Funnel, Verkaufsvarianten und organisatorische Reife",
+            icon: Briefcase,
+            title: "Vertrieb & Organisation",
+            description: "Euer Sales-Prozess, Verkaufsansätze und die organisatorische Skalierung.",
             topics: [
-                "Stufen des Sales Funnels und verfolgte KPIs",
-                "Buying Center Analyse und Stakeholder-Mapping",
-                "Eingesetzte Verkaufsvarianten (Value-based, Consultative, Product-led Selling)",
-                "Wachstumsphasen (Founder-led, Sales-led, Product-led) und nächste Schritte",
+                "Aufbau des Sales Funnels (Lead → Kunde → Botschafter) und Definition der KPIs",
+                "Analyse des Buying Centers und Stakeholder-Management",
+                "Einsatz verschiedener Verkaufsansätze (z.B. Value-based, Consultative Selling)",
+                "Skalierungspfad und Transformation vom projekt- zum produktbasierten Geschäft",
             ],
         },
         {
-            icon: Handshake, // Angepasstes Icon
+            icon: Handshake,
             title: "Netzwerk & Kooperationen",
-            description: "Euer Austausch mit Partnern und dem Impact-Ökosystem",
+            description: "Die Nutzung von Synergien im Ökosystem für gemeinsames Wachstum.",
             topics: [
-                "Aktiver Austausch mit anderen Startups und Sharing von Best Practices",
-                "Vernetzung mit Impact-Hubs und Zugang zu Förderprogrammen",
-                "Strategische Partnerschaften für Pilotprojekte und Impact-Scaling",
-                "Aufbau von Reseller- oder Multiplikatoren-Netzwerken",
+                "Austausch mit anderen Startups und Peer-to-Peer-Learning",
+                "Kooperationen mit strategischen Partnern (Unternehmen, NGOs, Gemeinden)",
+                "Vernetzung im Impact-Ökosystem (z.B. Anthropia, Impact Hubs)",
+                "Nutzung von Förderprogrammen und Stiftungen",
             ],
         },
     ]
 
     const preparationChecklist = [
-        "Ich kann unsere aktuelle Wachstumsstrategie detailliert beschreiben.",
-        "Ich kenne unsere Maßnahmen zur Kundenakquise und -bindung und deren Wirksamkeit.",
-        "Ich habe unsere Strategie zur Erschließung neuer Märkte im Blick.",
-        "Ich kann unseren Sales Funnel und die wichtigsten KPIs erklären.",
-        "Ich bin mit unseren Verkaufsvarianten vertraut und kann deren Effektivität bewerten.",
-        "Ich habe über unsere Netzwerk- und Kooperationsaktivitäten nachgedacht.",
-        "Ich bin bereit, über unsere organisatorische Skalierung und Team-Entwicklung zu sprechen.",
+        "Ich kann unsere Wachstumsstrategie, GTM-Pläne und den Prozess zur PMF-Validierung erläutern.",
+        "Ich kann unsere Marketing-Aktivitäten von der CVP über Impact Storytelling bis zu Performance-Kampagnen beschreiben.",
+        "Ich kenne unseren Sales Funnel, unsere Verkaufsansätze und die Pläne zur organisatorischen Skalierung.",
+        "Ich kann über unsere Erfahrungen und Pläne bei Kooperationen und der Vernetzung im Impact-Ökosystem berichten.",
+        "Ich habe die Herausforderungen und den Unterstützungsbedarf in den genannten Bereichen reflektiert.",
+        "Ich bin bereit, unsere wichtigsten Wachstums- und Impact-KPIs zu diskutieren (z.B. MRR, CAC, CO₂-Reduktion).",
     ]
+
+    const introText = "In diesem Gespräch wollen wir eure Strategien für Wachstum, Marketing und Vertrieb verstehen. Das KI-gestützte Interview hilft uns, eure Skalierungsreife zu bewerten und passgenaue Unterstützung anzubieten."
+
+    // --- ANGEPASSTE TEXTE ENDE ---
 
     const handleCheckboxChange = (index: number, checked: boolean) => {
         const newCheckedItems = { ...checkedItems, [index]: checked }
@@ -81,14 +86,11 @@ export default function PreparationPage() {
     }
     
     const handleStartInterview = () => {
-        // Sicherstellen, dass die applicationId vorhanden ist
         if (!applicationId) {
             console.error("Application ID fehlt in der URL. Kann das Interview nicht starten.");
-            router.push("/"); // Fallback-Route
+            router.push("/");
             return;
         }
-
-        // Weiterleitung zum Distribution-Interview mit applicationId und interviewType
         router.push(`/interview_distribution?applicationId=${applicationId}&interviewType=distribution`);
     }
 
@@ -108,7 +110,7 @@ export default function PreparationPage() {
                                 />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Distribution-Vorbereitung</h1> {/* Angepasster Titel */}
+                                <h1 className="text-2xl font-bold text-gray-900">Distribution-Vorbereitung</h1>
                                 <p className="text-gray-600">Mach dich bereit für dein KI-Interview</p>
                             </div>
                         </div>
@@ -134,7 +136,7 @@ export default function PreparationPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-gray-700 mb-4">
-                            In diesem Gespräch wollen wir deine Wachstumsstrategie, Kundenakquise und Vertriebsprozesse verstehen. Das KI-gestützte Interview hilft uns, eure Distributionsreife einzuschätzen.
+                            {introText}
                         </p>
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -157,7 +159,7 @@ export default function PreparationPage() {
                 {/* Themenbereiche */}
                 <div className="mb-8">
                     <h2 className="text-xl font-bold text-gray-900 mb-6">Worüber wir sprechen</h2>
-                    <div className="grid lg:grid-cols-2 gap-6"> {/* Angepasstes Grid-Layout für 2 Spalten */}
+                    <div className="grid lg:grid-cols-2 gap-6">
                         {readinessAreas.map((area, index) => {
                             const Icon = area.icon
                             return (

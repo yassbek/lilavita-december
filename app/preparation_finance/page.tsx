@@ -16,52 +16,60 @@ export default function PreparationPage() {
     const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
     const [isReady, setIsReady] = useState(false)
 
+    // --- ANGEPASSTE TEXTE START ---
+
     const readinessAreas = [
         {
-            icon: DollarSign, // Angepasstes Icon
-            title: "Finanzierungsstrategie",
-            description: "Euer Kapitalbedarf und die Ziele der nächsten Finanzierungsrunde",
+            icon: DollarSign,
+            title: "Finanzierungsstrategie & Roadmap",
+            description: "Euer Kapitalbedarf, die Ziele und der Zeitplan der nächsten Finanzierungsrunde.",
             topics: [
-                "Höhe des Kapitalbedarfs (12-18 Monate) und Ermittlung",
-                "Ziele, die mit der Runde erreicht werden sollen (Team, Tech, Impact)",
-                "Bewusste Entscheidung für/gegen Venture Case",
-                "Roadmap für Pre-Raising, Fundraising, Post-Raising",
+                "Definition des Kapitalbedarfs für 12-18 Monate und dessen Herleitung", // cite: 491
+                "Ziele der Finanzierungsrunde (z.B. Team, Tech, Impact-Multiplikation)", // cite: 492
+                "Roadmap für die Phasen: Pre-Raising, Fundraising und Post-Raising", // cite: 498, 499, 500
+                "Analyse und Management von Risiken in eurer Finanzierungsstrategie", // cite: 547
             ],
         },
         {
-            icon: Briefcase, // Angepasstes Icon
-            title: "Kapitalformen & Investoren",
-            description: "Der geplante Kapitalmix und passende Investorenprofile",
+            icon: Briefcase,
+            title: "Kapitalmix & Investoren-Ansprache",
+            description: "Der geplante Mix aus Kapitalformen und die Profile passender Geldgeber.",
             topics: [
-                "Geeignete Kapitalformen (Equity, Fremdkapital, Blended Finance, Förder-/philanthropische Mittel)",
-                "Vor- und Nachteile der gewählten Kapitalformen für euer Geschäftsmodell",
-                "Profile passender Impact-Investoren und Kapitalgeber",
-                "Begründung, warum diese Investoren zu euch passen",
+                "Intelligenter Mix aus Equity, Fremdkapital, Blended Finance und Fördermitteln", // cite: 494, 495, 496
+                "Abwägung der Vor- und Nachteile verschiedener Kapitalformen für euer Modell", // cite: 495, 496
+                "Identifikation passender Impact-Investoren, Stiftungen und Family Offices", // cite: 496, 544
+                "Vorbereitete Due Diligence-Unterlagen (Data Room, One Pager, Finanzplan)", // cite: 518
             ],
         },
         {
-            icon: TrendingUp, // Angepasstes Icon
-            title: "Finanzmodell & KPIs",
-            description: "Euer Finanzplan, Kennzahlen und Cap Table Management",
+            icon: TrendingUp,
+            title: "Finanzmodell, KPIs & Cap Table",
+            description: "Eure Finanzplanung, die wichtigsten Kennzahlen und die Anteilsstruktur.",
             topics: [
-                "Fundiertes Finanzmodell (Bottom-Up Forecast, Szenarienanalyse)",
-                "Wichtige Finanz-KPIs (MRR, Burn Rate, CAC, LTV, Cash Runway)",
-                "Struktur des Cap Tables (Gründeranteile, Dead Equity, Mitarbeiterbeteiligung)",
-                "Wirkungsmessung nach IRIS+, GIIRS oder EVPA-Rahmenwerk",
+                "Fundiertes Finanzmodell mit Bottom-Up Forecast und Szenarienanalyse", // cite: 516
+                "Gemeinsames Reporting von Finanz-KPIs (MRR, CAC, LTV) und Impact-KPIs (SDGs, IRIS+)", // cite: 502, 503, 517
+                "Saubere Cap-Table-Struktur (Gründeranteile, ESOP, keine Dead Equity)", // cite: 504, 515
+                "Transparente Governance- und Reporting-Struktur für Investoren", // cite: 505
             ],
         },
     ]
 
     const preparationChecklist = [
-        "Ich habe unsere Finanzierungsstrategie für die nächsten 18 Monate klar vor Augen.",
-        "Ich kann unseren Kapitalbedarf und dessen Ermittlung erklären.",
-        "Ich kenne die wichtigsten Finanz-KPIs (MRR, Burn Rate, LTV) und Impact-Kennzahlen.",
-        "Ich bin mit unserem Cap Table vertraut und kann dessen Struktur erläutern.",
-        "Ich kann über unsere bisher eingeworbenen Förder- oder philanthropischen Mittel sprechen.",
-        "Ich weiß, welche Investoren zu uns passen und warum.",
-        "Ich kann unsere Post-Raising- und Exit-Strategie darlegen.",
-        "Ich habe über aktuelle Risiken für unsere Finanzierungsstrategie nachgedacht und wie wir ihnen begegnen.",
+        "Ich kann unsere Finanzierungsstrategie für die nächsten 18 Monate darlegen.", // Frage 1
+        "Ich kann begründen, welche Kapitalformen für uns geeignet sind und welche nicht.", // Frage 2
+        "Ich kann unseren Kapitalbedarf exakt beziffern und dessen Berechnung erklären.", // Frage 3
+        "Ich kenne die Finanz- und Impact-KPIs, mit denen wir unser Startup steuern.", // Frage 4
+        "Ich bin mit der aktuellen Struktur unseres Cap Tables vertraut.", // Frage 5
+        "Ich kann über beantragte oder erhaltene Förder- und philanthropische Mittel berichten.", // Frage 6
+        "Ich kann erklären, wie wir unseren Impact messen und an Investoren berichten.", // Frage 7
+        "Ich weiß, welche Investorenprofile zu unserer Mission und Phase passen.", // Frage 8
+        "Ich kann unsere Strategie für die Zeit nach der Finanzierung (Post-Raising) erläutern.", // Frage 9
+        "Ich habe die Risiken unserer Finanzierungsstrategie reflektiert und Lösungsansätze parat.", // Frage 10
     ]
+
+    const introText = "In diesem Gespräch wollen wir eure Strategie, euren Kapitalbedarf und eure Pläne für die Finanzierung eures Impact Startups verstehen. Das KI-gestützte Interview hilft uns, eure Finanzierungsreife einzuschätzen, um euch gezielt zu unterstützen."
+
+    // --- ANGEPASSTE TEXTE ENDE ---
 
     const handleCheckboxChange = (index: number, checked: boolean) => {
         const newCheckedItems = { ...checkedItems, [index]: checked }
@@ -71,14 +79,11 @@ export default function PreparationPage() {
     }
     
     const handleStartInterview = () => {
-        // Sicherstellen, dass die applicationId vorhanden ist
         if (!applicationId) {
             console.error("Application ID fehlt in der URL. Kann das Interview nicht starten.");
-            router.push("/"); // Fallback-Route
+            router.push("/");
             return;
         }
-
-        // Weiterleitung zum Finanzierungs-Interview mit applicationId und interviewType
         router.push(`/interview_finance?applicationId=${applicationId}&interviewType=finanzierung`);
     }
 
@@ -98,7 +103,7 @@ export default function PreparationPage() {
                                 />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Finanzierungs-Vorbereitung</h1> {/* Angepasster Titel */}
+                                <h1 className="text-2xl font-bold text-gray-900">Finanzierungs-Vorbereitung</h1>
                                 <p className="text-gray-600">Mach dich bereit für dein KI-Interview</p>
                             </div>
                         </div>
@@ -124,7 +129,7 @@ export default function PreparationPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-gray-700 mb-4">
-                            In diesem Gespräch wollen wir deine Strategie, deinen Kapitalbedarf und deine Pläne für die Finanzierung deines Impact Startups verstehen. Das KI-gestützte Interview hilft uns, eure Finanzierungsreife einzuschätzen.
+                            {introText}
                         </p>
 
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
