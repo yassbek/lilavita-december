@@ -106,8 +106,11 @@ function AppView() {
                     nextPath = `/preparation_finance?applicationId=${currentApplicationId}`;
                     break;
                 case 'marketing':
-                    nextPath = `/completion_marketing?applicationId=${currentApplicationId}`;
+                    nextPath = `/preparation_marketing?applicationId=${currentApplicationId}`;
                     break;
+                case 'ditribution':
+                    nextPath = `/preparation_ditribution?applicationId=${currentApplicationId}`;
+                    break;   
                 case 'completed':
                     nextPath = `/dashboard?applicationId=${currentApplicationId}`;
                     break;
