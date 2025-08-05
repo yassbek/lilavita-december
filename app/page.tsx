@@ -5,6 +5,8 @@ import { Widget } from "@typeform/embed-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Cookies from 'js-cookie'; // Import für Cookies
+import { v4 as uuidv4 } from 'uuid'; // Import für UUID-Generierung
 
 function LoadingOverlay({ text }: { text: string }) {
   return (
@@ -52,10 +54,86 @@ function LandingPage({ onStartClick }: { onStartClick: () => void }) {
 }
 
 function AppView() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<'landing' | 'typeform'>('landing');
+  const [isLoading, setIsLoading] = useState(true); // Initial auf true setzen, da der Fortschritt geladen wird
+  const [currentView, setCurrentView] = useState<'loading' | 'landing' | 'typeform'>('loading'); // Neuer Zustand 'loading'
   const typeformRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [applicationId, setApplicationId] = useState<string | null>(null); // applicationId im Zustand halten
+
+  useEffect(() => {
+    const initializeSessionAndRedirect = async () => {
+      let currentApplicationId = Cookies.get('applicationId');
+
+      if (!currentApplicationId) {
+        // Wenn keine applicationId im Cookie gefunden wird, generiere eine neue
+        currentApplicationId = uuidv4();
+        // Speichere die ID im Cookie für 7 Tage
+        Cookies.set('applicationId', currentApplicationId, { expires: 7, secure: process.env.NODE_ENV === 'production' });
+        setApplicationId(currentApplicationId); // Setze die ID im Zustand
+        setIsLoading(false); // Laden beendet, zeige Landing Page
+        setCurrentView('landing');
+      } else {
+        setApplicationId(currentApplicationId); // Setze die ID im Zustand
+        try {
+          // API-Aufruf, um den aktuellen Fortschritt des Benutzers aus Directus abzurufen
+          const response = await fetch(`/api/user-progress?applicationId=${currentApplicationId}`);
+          
+          if (!response.ok) {
+            // Wenn der Fortschritt nicht gefunden wird (z.B. 404), ist es ein neuer Start
+            if (response.status === 404) {
+                console.warn(`ApplicationId ${currentApplicationId} nicht in Directus gefunden. Starte neue Bewerbung.`);
+                setIsLoading(false);
+                setCurrentView('landing');
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+
+          let nextPath: string | null = null;
+
+          // Bestimme den nächsten Pfad basierend auf dem Fortschritt
+          if (data.progress && data.progress.current_interview_stage) {
+            const stage = data.progress.current_interview_stage;
+            switch (stage) {
+                case 'team-reife':
+                    nextPath = `/preparation_impact?applicationId=${currentApplicationId}`;
+                    break;
+                case 'impact':
+                    nextPath = `/preparation_impact?applicationId=${currentApplicationId}`;
+                    break;
+                case 'finanzierung':
+                    nextPath = `/preparation_finance?applicationId=${currentApplicationId}`;
+                    break;
+                case 'marketing':
+                    nextPath = `/completion_marketing?applicationId=${currentApplicationId}`;
+                    break;
+                case 'completed':
+                    nextPath = `/dashboard?applicationId=${currentApplicationId}`;
+                    break;
+                default:
+                    // Fallback für unbekannten Status, zeige Landing Page
+                    nextPath = null; // Bleibt auf Landing, wenn Stage unbekannt ist
+            }
+          }
+          
+          if (nextPath) {
+            router.replace(nextPath); // replace, damit der Benutzer nicht zurücknavigieren kann
+          } else {
+            setIsLoading(false);
+            setCurrentView('landing'); // Wenn kein Fortschritt oder unbekannter Status, zeige Landing
+          }
+
+        } catch (error) {
+          console.error("Fehler beim Laden des Fortschritts oder der Initialisierung:", error);
+          setIsLoading(false);
+          setCurrentView('landing'); // Bei Fehlern immer Landing Page anzeigen
+        }
+      }
+    };
+
+    initializeSessionAndRedirect();
+  }, [router]);
 
   const handleStartClick = () => {
     setCurrentView('typeform');
@@ -71,14 +149,19 @@ function AppView() {
     setIsLoading(true);
 
     try {
+      // Wenn applicationId noch null ist (sollte nicht passieren, aber zur Sicherheit)
+      if (!applicationId) {
+        throw new Error("Application ID ist nach Typeform-Start noch nicht gesetzt.");
+      }
+
       const apiResponse = await fetch(`/api/create-application`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ responseId: payload.responseId })
+        // Sende die generierte applicationId mit, damit Directus sie verwenden kann
+        body: JSON.stringify({ responseId: payload.responseId, applicationId: applicationId })
       });
 
       if (!apiResponse.ok) {
-        // Dieser Check fängt jetzt echte Server-Fehler wie 404 oder 500 ab
         const errorText = await apiResponse.text();
         throw new Error(`Fehler bei der Kommunikation mit dem Server. Status: ${apiResponse.status}, Body: ${errorText}`);
       }
@@ -87,13 +170,24 @@ function AppView() {
 
       if (apiResponseData.status === 'qualified') {
         const newApplicationData = apiResponseData.data;
+        // Stellen Sie sicher, dass die ID aus der API-Antwort verwendet wird,
+        // falls Directus eine andere ID generiert hat oder die übermittelte ID verwendet hat.
+        // In unserem Fall sollte es die gleiche sein, aber es ist gute Praxis.
+        const finalApplicationId = newApplicationData.id.toString(); 
+        
+        // Aktualisiere das Cookie mit der finalen ID, falls es sich geändert hat (z.B. von UUID zu Integer)
+        Cookies.set('applicationId', finalApplicationId, { expires: 7, secure: process.env.NODE_ENV === 'production' });
+
         const queryParams = new URLSearchParams({
           name: newApplicationData.name || '',
-          startup: newApplicationData.startup || '', // KORRIGIERT
+          startup: newApplicationData.startup || '',
           branche: newApplicationData.branche || '',
-          applicationId: newApplicationData.id.toString(),
+          applicationId: finalApplicationId, // Verwende die finale ID
         }).toString();
-        router.push(`/start?${queryParams}`);
+        
+        // Nach erfolgreicher Typeform-Einreichung und Qualifizierung,
+        // leite zum ersten Interview (Team-Reife) weiter.
+        router.push(`/preparation?${queryParams}`);
       } else {
         router.push('/rejection');
       }
@@ -107,9 +201,10 @@ function AppView() {
 
   return (
     <div className="relative w-full min-h-screen bg-[#FDFCF7]">
-      {isLoading && <LoadingOverlay text="Analysiere Einreichung" />}
+      {isLoading && <LoadingOverlay text="Lade deinen Fortschritt" />}
       {currentView === 'landing' && <LandingPage onStartClick={handleStartClick} />}
 
+      {/* Zeige Typeform nur, wenn currentView 'typeform' ist */}
       <div ref={typeformRef} className={`w-full h-screen ${currentView === 'typeform' ? 'block' : 'hidden'}`}>
         <Widget
           id="yYh3nt7W"

@@ -5,6 +5,7 @@ import { teamReifePrompt } from './prompts/readiness';
 import { impactPrompt } from './prompts/impact';
 import { finanzierungPrompt } from './prompts/financing';
 import { marketingPrompt } from './prompts/marketing';
+import { distributionPrompt } from './prompts/distribution'; // Import des neuen Prompts
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
@@ -17,6 +18,7 @@ const INTERVIEW_CONFIGS = {
             "team_kompetenz", "team_dynamik", "organisation", "fuehrung", "prozesse", "kultur",
             "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
         ],
+        nextStage: "impact" // Nächste Phase nach Abschluss von "team-reife"
     },
     "impact": {
         directusCollection: "impact",
@@ -26,6 +28,7 @@ const INTERVIEW_CONFIGS = {
             "imm_process", "reporting_communication", "continuous_improvement",
             "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
         ],
+        nextStage: "marketing" // Nächste Phase nach Abschluss von "impact"
     },
     "finanzierung": {
         directusCollection: "financing",
@@ -35,6 +38,7 @@ const INTERVIEW_CONFIGS = {
             "impact_kpis_score", "cap_table_score", "investor_alignment_score", "risk_strategy_score",
             "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
         ],
+        nextStage: "distribution" // Nächste Phase nach Abschluss von "finanzierung"
     },
     "marketing": {
         directusCollection: "marketing",
@@ -45,6 +49,17 @@ const INTERVIEW_CONFIGS = {
             "brand_authenticity_score",
             "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
         ],
+        nextStage: "finanzierung" // Nächste Phase nach Abschluss von "marketing"
+    },
+    "distribution": { // Neuer Eintrag für das Distribution-Interview
+        directusCollection: "distribution", // Die Collection, die Sie erstellt haben
+        prompt: distributionPrompt, // Der importierte Prompt wird hier verwendet
+        fields: [
+            "growth_strategy_score", "customer_acquisition_score", "sales_funnel_score",
+            "sales_approach_score", "partnership_network_score", "organization_scalability_score",
+            "ai_staerken", "ai_verbesserungsbereiche", "ai_empfehlungen"
+        ],
+        nextStage: "completed" // Nächste Phase nach Abschluss von "distribution" (Finale)
     },
 };
 
@@ -55,7 +70,7 @@ type InterviewType = keyof typeof INTERVIEW_CONFIGS;
 
 // 2. Create a "type guard" function to check if a string is a valid key.
 function isValidInterviewType(type: string): type is InterviewType {
-  return type in INTERVIEW_CONFIGS;
+    return type in INTERVIEW_CONFIGS;
 }
 
 // --- END: TYPE-SAFE FIX ---
@@ -102,9 +117,9 @@ export async function POST(request: NextRequest) {
             const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
             const jsonString = text.match(/\{[\s\S]*\}/)?.[0] || '{}';
             scores = JSON.parse(jsonString);
-        } catch (e) {
-            console.error('Failed to parse Gemini response:', geminiData, e);
-            return NextResponse.json({ error: 'Failed to parse Gemini response' }, { status: 500 });
+        } catch (parseError) {
+            console.error('Failed to parse Gemini response:', parseError, geminiData);
+            return NextResponse.json({ error: 'Failed to parse Gemini response', details: parseError, geminiResponse: geminiData }, { status: 500 });
         }
 
         // Prepare the payload for Directus dynamically
@@ -116,18 +131,18 @@ export async function POST(request: NextRequest) {
                 directusPayload[field] = scores[field];
             }
         });
-
-        // Add applications_id to the payload if it's a new collection
-        if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing") {
+        
+        // Füge die applications_id zur Payload hinzu, falls es eine neue Collection ist
+        if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing" || interviewType === "distribution") {
              directusPayload.applications_id = applicationId;
         }
 
         const directusToken = process.env.NEXT_PUBLIC_DIRECTUS_TOKEN || process.env.DIRECTUS_STATIC_TOKEN;
 
-        // Depending on the interview type, either update an existing application (PATCH)
-        // or create a new entry in the specific collection (POST)
+        // Je nach Interview-Typ wird entweder eine bestehende Anwendung aktualisiert (PATCH)
+        // oder ein neuer Eintrag in der spezifischen Collection erstellt (POST)
         let directusRes;
-        if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing") {
+        if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing" || interviewType === "distribution") {
             const directusUrl = `${process.env.NEXT_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL}/items/${config.directusCollection}`;
             directusRes = await fetch(directusUrl, {
                 method: 'POST',
@@ -148,13 +163,42 @@ export async function POST(request: NextRequest) {
                 body: JSON.stringify(directusPayload)
             });
         }
-
+        
         const directusData = await directusRes.json();
         console.log('Directus response:', directusData);
 
         if (!directusRes.ok) {
             return NextResponse.json({ error: 'Failed to write to Directus', directusData }, { status: directusRes.status });
         }
+
+        // --- NEUER TEIL: Fortschritt in der applications-Collection aktualisieren ---
+        // Dies geschieht immer, nachdem die primären Interviewdaten gespeichert wurden
+        const nextStageToUpdate = config.nextStage;
+        if (nextStageToUpdate) {
+            const updateProgressUrl = `${process.env.NEXT_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL}/items/applications/${applicationId}`;
+            const updateProgressPayload = {
+                current_interview_stage: nextStageToUpdate
+            };
+
+            const updateProgressRes = await fetch(updateProgressUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${directusToken}`
+                },
+                body: JSON.stringify(updateProgressPayload)
+            });
+
+            if (!updateProgressRes.ok) {
+                const updateErrorData = await updateProgressRes.json();
+                console.error('Failed to update user progress in Directus:', updateErrorData);
+                // Optional: Hier könnten Sie entscheiden, ob Sie einen Fehler zurückgeben
+                // oder den ursprünglichen Erfolg beibehalten, da die Hauptdaten gespeichert sind.
+            } else {
+                console.log(`User progress for ${applicationId} updated to: ${nextStageToUpdate}`);
+            }
+        }
+        // --- ENDE NEUER TEIL ---
 
         return NextResponse.json({ scores, directus: directusData, gemini: geminiData });
     } catch (error) {

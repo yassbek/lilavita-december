@@ -6,16 +6,16 @@ import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, Mail, Calendar, Users, Cog, Target, DollarSign } from "lucide-react" // DollarSign hinzugefügt
+import { CheckCircle, Clock, Mail, Calendar, Users, Cog, Target, DollarSign, Megaphone, Truck } from "lucide-react" // Truck-Icon für Distribution hinzugefügt
 
 export default function CompletionPage() {
     const router = useRouter()
     const searchParams = useSearchParams();
-    const applicationId = searchParams.get("applicationId"); // application_id aus der URL holen
+    const applicationId = searchParams.get("applicationId");
+    
     const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
-        // Simple Animation für die Erfolgsanzeige
         const timer = setTimeout(() => {
             setShowSuccess(true)
         }, 300)
@@ -24,20 +24,18 @@ export default function CompletionPage() {
     }, [])
 
     const nextSteps = [
-        { title: "Prüfung der Bewerbung", description: "Unser Team prüft dein Interview und deine Unterlagen.", timeframe: "3-5 Werktage", icon: Clock },
-        { title: "Erstes Feedback", description: "Du erhältst eine erste Rückmeldung zu deinem Readiness Assessment.", timeframe: "ca. 1 Woche", icon: Mail },
+        { title: "Prüfung der Bewerbung", description: "Unser Team prüft alle deine Interviews und Unterlagen.", timeframe: "3-5 Werktage", icon: Clock },
+        { title: "Erstes Feedback", description: "Du erhältst eine erste Rückmeldung zu deinem gesamten Readiness Assessment.", timeframe: "ca. 1 Woche", icon: Mail },
         { title: "Entscheidung", description: "Finale Entscheidung über die Aufnahme in den Accelerator.", timeframe: "ca. 2 Wochen", icon: CheckCircle },
         { title: "Programmstart", description: "Bei einer Zusage beginnt deine Reise im Accelerator.", timeframe: "Nächster Jahrgang", icon: Calendar },
     ]
 
-    // Funktion zur Navigation zum Dashboard oder einer Übersichtsseite
-    const goToDashboard = () => {
-        // Hier können Sie zu Ihrem Haupt-Dashboard oder einer Anwendungsübersicht navigieren
-        // Die applicationId kann bei Bedarf weitergegeben werden, z.B. zu einer Detailseite der Bewerbung
+    // Funktion zur Navigation zum finalen Bewerbungs-Dashboard
+    const goToFinalDashboard = () => {
         if (applicationId) {
-            router.push(`/preparation_distribution?applicationId=${applicationId}`); // Beispiel: Weiterleitung zu einem Dashboard mit der ID
+            router.push(`/dashboard?applicationId=${applicationId}`); // Beispiel: Weiterleitung zu einem umfassenden Dashboard
         } else {
-            router.push("/preparation_distribution"); // Fallback, falls keine ID vorhanden ist
+            router.push("/dashboard"); // Fallback, falls keine ID vorhanden ist
         }
     };
 
@@ -52,8 +50,8 @@ export default function CompletionPage() {
                                 <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" width={48} height={48} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Finanzierungs-Interview Abgeschlossen</h1> {/* Angepasster Titel */}
-                                <p className="text-gray-600">Vielen Dank für deine Teilnahme</p>
+                                <h1 className="text-2xl font-bold text-gray-900">Bewerbung Abgeschlossen</h1> {/* Genereller Titel für den Abschluss */}
+                                <p className="text-gray-600">Alle Interviews erfolgreich absolviert!</p> {/* Angepasste Beschreibung */}
                             </div>
                         </div>
                         <Badge variant="outline" className="border-green-600 text-green-700 bg-green-50 font-medium">
@@ -71,10 +69,10 @@ export default function CompletionPage() {
                         <CheckCircle className={`transition-all duration-700 ${showSuccess ? "w-12 h-12 text-green-600" : "w-10 h-10 text-gray-400"}`} />
                     </div>
                     <h2 className={`text-3xl font-bold mt-4 transition-opacity duration-700 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Finanzierungs-Interview erfolgreich!
+                        Glückwunsch! Alle Interviews abgeschlossen!
                     </h2>
                     <p className={`text-gray-600 mt-2 max-w-2xl mx-auto transition-opacity duration-700 delay-200 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Dein Finanzierungs-Interview für den Impact Factory Accelerator wurde erfolgreich übermittelt. Die Analyse läuft im Hintergrund.
+                        Du hast alle Interviews für den Impact Factory Accelerator erfolgreich absolviert. Deine gesamte Bewerbung wird nun von unserem Team geprüft.
                     </p>
                 </div>
 
@@ -130,9 +128,17 @@ export default function CompletionPage() {
                                     <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center flex-shrink-0"><Target className="w-5 h-5 text-green-600" /></div>
                                     <div><h4 className="font-medium text-sm text-green-900">Impact-Reife</h4></div>
                                 </div>
-                                <div className="text-left p-3 bg-yellow-50 rounded-lg flex items-center space-x-3"> {/* Neue Karte für Finanzierung */}
+                                <div className="text-left p-3 bg-yellow-50 rounded-lg flex items-center space-x-3">
                                     <div className="w-8 h-8 bg-yellow-100 rounded-md flex items-center justify-center flex-shrink-0"><DollarSign className="w-5 h-5 text-yellow-600" /></div>
                                     <div><h4 className="font-medium text-sm text-yellow-900">Finanzierungs-Reife</h4></div>
+                                </div>
+                                <div className="text-left p-3 bg-red-50 rounded-lg flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-red-100 rounded-md flex items-center justify-center flex-shrink-0"><Megaphone className="w-5 h-5 text-red-600" /></div>
+                                    <div><h4 className="font-medium text-sm text-red-900">Marketing-Reife</h4></div>
+                                </div>
+                                <div className="text-left p-3 bg-indigo-50 rounded-lg flex items-center space-x-3"> {/* Neue Karte für Distribution */}
+                                    <div className="w-8 h-8 bg-indigo-100 rounded-md flex items-center justify-center flex-shrink-0"><Truck className="w-5 h-5 text-indigo-600" /></div>
+                                    <div><h4 className="font-medium text-sm text-indigo-900">Distributions-Reife</h4></div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -141,7 +147,7 @@ export default function CompletionPage() {
 
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button onClick={goToDashboard} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
+                    <Button onClick={goToFinalDashboard} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
                         Zum Bewerbungs-Dashboard
                     </Button>
                     <Button variant="outline" onClick={() => window.open("mailto:applications@impactfactory.de", "_blank")} size="lg">
