@@ -8,7 +8,7 @@ import { marketingPrompt } from './prompts/marketing';
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
-// Definieren Sie die Konfigurationen für verschiedene Interview-Typen
+// Define the configurations for different interview types
 const INTERVIEW_CONFIGS = {
     "team-reife": {
         directusCollection: "applications",
@@ -48,6 +48,19 @@ const INTERVIEW_CONFIGS = {
     },
 };
 
+// --- START: TYPE-SAFE FIX ---
+
+// 1. Create a type representing the valid keys of the config object.
+type InterviewType = keyof typeof INTERVIEW_CONFIGS;
+
+// 2. Create a "type guard" function to check if a string is a valid key.
+function isValidInterviewType(type: string): type is InterviewType {
+  return type in INTERVIEW_CONFIGS;
+}
+
+// --- END: TYPE-SAFE FIX ---
+
+
 export async function POST(request: NextRequest) {
     try {
         const { transcript, applicationId } = await request.json();
@@ -56,17 +69,21 @@ export async function POST(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const interviewType = searchParams.get("type") || "team-reife";
+        const interviewTypeParam = searchParams.get("type") || "team-reife";
 
-        const config = INTERVIEW_CONFIGS[interviewType];
-        if (!config) {
-            return NextResponse.json({ error: 'Invalid interview type' }, { status: 400 });
+        // 3. Use the type guard to validate the key before using it.
+        if (!isValidInterviewType(interviewTypeParam)) {
+            return NextResponse.json({ error: 'Invalid interview type provided' }, { status: 400 });
         }
+        
+        // TypeScript now knows `interviewTypeParam` is a valid key, so no more error.
+        const config = INTERVIEW_CONFIGS[interviewTypeParam];
+        const interviewType = interviewTypeParam; // Use the validated param
 
-        // Dynamischer Prompt-Aufbau
+        // Dynamic prompt creation
         const finalPrompt = config.prompt(transcript);
 
-        // Gemini-API-Aufruf
+        // Gemini API call
         const geminiRes = await fetch(GEMINI_API_URL + `?key=${process.env.GEMINI_API_KEY}`,
             {
                 method: 'POST',
@@ -83,9 +100,10 @@ export async function POST(request: NextRequest) {
         let scores: { [key: string]: unknown } = {};
         try {
             const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            scores = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-        } catch {
-            console.error('Failed to parse Gemini response:', geminiData);
+            const jsonString = text.match(/\{[\s\S]*\}/)?.[0] || '{}';
+            scores = JSON.parse(jsonString);
+        } catch (e) {
+            console.error('Failed to parse Gemini response:', geminiData, e);
             return NextResponse.json({ error: 'Failed to parse Gemini response' }, { status: 500 });
         }
 
@@ -99,15 +117,15 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        // Füge die applications_id zur Payload hinzu, falls es eine neue Collection ist
+        // Add applications_id to the payload if it's a new collection
         if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing") {
              directusPayload.applications_id = applicationId;
         }
 
         const directusToken = process.env.NEXT_PUBLIC_DIRECTUS_TOKEN || process.env.DIRECTUS_STATIC_TOKEN;
 
-        // Je nach Interview-Typ wird entweder eine bestehende Anwendung aktualisiert (PATCH)
-        // oder ein neuer Eintrag in der spezifischen Collection erstellt (POST)
+        // Depending on the interview type, either update an existing application (PATCH)
+        // or create a new entry in the specific collection (POST)
         let directusRes;
         if (interviewType === "impact" || interviewType === "finanzierung" || interviewType === "marketing") {
             const directusUrl = `${process.env.NEXT_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL}/items/${config.directusCollection}`;

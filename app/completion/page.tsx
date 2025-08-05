@@ -32,7 +32,7 @@ export default function CompletionPage() {
         } else {
             // Optional: Handle the case where applicationId is missing
             console.error("Application ID fehlt. Kann nicht zum nächsten Schritt leiten.");
-            router.push("/dashboard"); // Fallback-Route
+            router.push("/preparation_impact"); // Fallback-Route
         }
     };
 
