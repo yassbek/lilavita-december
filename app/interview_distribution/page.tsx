@@ -142,7 +142,7 @@ export default function InterviewPage() {
         
         if (!transcript || transcript.length === 0) {
             console.warn("WARN: Transkript ist leer. Keine Analyse durchgeführt.");
-            router.push(`/completion_distribtuion?${params.toString()}`); // Weiterleitung zur Marketing-Completion
+            router.push(`/completion_distribution?${params.toString()}`); // Weiterleitung zur Marketing-Completion
             return;
         }
         
