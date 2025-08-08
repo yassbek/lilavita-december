@@ -7,7 +7,7 @@ import { useConversation } from "@elevenlabs/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User } from "lucide-react"
+import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User, Timer } from "lucide-react"
 
 export default function InterviewPage() {
     const router = useRouter()
@@ -25,6 +25,11 @@ export default function InterviewPage() {
     const streamRef = useRef<MediaStream | null>(null)
     const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
 
+    // Status für den Timer
+    const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 Minuten in Sekunden
+    const [isTimerActive, setIsTimerActive] = useState(false);
+
+
     const appendToTranscript = useCallback((role: "user" | "ai", text: string) => {
         setTranscript((prev) => [...prev, { role, text, timestamp: new Date().toISOString() }])
     }, [])
@@ -34,13 +39,13 @@ export default function InterviewPage() {
             setIsConnected(true)
             setConnecting(false)
             setConnectionError(null)
+            setIsTimerActive(true); // Timer starten, wenn die Verbindung steht
         },
         onDisconnect: () => {
             setIsConnected(false)
             setConnecting(false)
+            setIsTimerActive(false); // Timer anhalten
         },
-        // HINWEIS: Die Signatur für onMessage kann je nach Bibliotheksversion variieren.
-        // Diese Version prüft auf props.source, was gut ist.
         onMessage: (props: { message: string; source: "user" | "ai" }) => {
             appendToTranscript(props.source, props.message);
         },
@@ -56,7 +61,6 @@ export default function InterviewPage() {
         },
     })
 
-    // KORREKTUR 1: Nur ein useEffect für die Kamera-Initialisierung.
     useEffect(() => {
         let didCancel = false
         async function setupCamera() {
@@ -70,44 +74,57 @@ export default function InterviewPage() {
                 if (didCancel) return
                 streamRef.current = mediaStream
                 setHasPermissions(true)
-                // REMOVE videoRef.current.srcObject assignment from here
             } catch {
                 setPermissionError("Kamera-/Mikrofonberechtigungen erforderlich.")
                 setHasPermissions(false)
             }
         }
         setupCamera()
-
-        // KORREKTUR 2: Die Aufräumfunktion stoppt NUR die Kamera. KEIN conversation.endSession() hier!
         return () => {
             didCancel = true
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach((track) => track.stop())
             }
         }
-    }, []) // Leeres Array ist korrekt.
+    }, [])
 
-    // Dedicated effect to assign the video stream for local preview only
     useEffect(() => {
         if (hasPermissions && !isCameraOff && videoRef.current && streamRef.current) {
             videoRef.current.srcObject = streamRef.current;
         }
     }, [hasPermissions, isCameraOff, videoRef, streamRef]);
 
-    // KORREKTUR 3: Der separate, korrekte Effekt, der die Session nur beendet, wenn das Fenster geschlossen wird.
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (isConnected) {
                 conversation.endSession();
             }
         };
-
         window.addEventListener('beforeunload', handleBeforeUnload);
-
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [conversation, isConnected]);
+
+    // Effekt für die Timer-Logik
+    useEffect(() => {
+        // Timer läuft nur, wenn er aktiv ist und eine Verbindung besteht
+        if (!isTimerActive || !isConnected) return;
+
+        // Wenn die Zeit abgelaufen ist, Interview beenden
+        if (timeLeft <= 0) {
+            endInterview();
+            return;
+        }
+
+        // Jede Sekunde die Zeit reduzieren
+        const intervalId = setInterval(() => {
+            setTimeLeft((prevTime) => prevTime - 1);
+        }, 1000);
+
+        // Aufräumfunktion, um den Intervall zu stoppen
+        return () => clearInterval(intervalId);
+    }, [isTimerActive, isConnected, timeLeft]);
 
 
     const startInterview = async () => {
@@ -154,16 +171,15 @@ export default function InterviewPage() {
         }
     }
 
-    const endInterview = async () => {
+    // Die endInterview Funktion wird jetzt als useCallback deklariert, um sie stabil zu machen
+    const endInterview = useCallback(async () => {
+        setIsTimerActive(false); // Timer anhalten
         await conversation.endSession();
-        // Ensure transcript is saved first
         await sendTranscriptToDirectus();
 
-        // Redirect to completion page immediately
         const params = new URLSearchParams(searchParams);
         router.push(`/completion?${params.toString()}`);
 
-        // Fire-and-forget: analyze transcript in the background
         fetch('/api/analyze-transcript', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -172,6 +188,13 @@ export default function InterviewPage() {
         .then(res => res.json())
         .then(data => console.log("Gemini analyze-transcript response:", data))
         .catch(err => console.error("Error calling analyze-transcript:", err));
+    }, [applicationId, conversation, router, searchParams, transcript]);
+
+    // Funktion zur Zeitformatierung
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     };
     
     return (
@@ -196,9 +219,18 @@ export default function InterviewPage() {
                                 </div>
                             </div>
                         </div>
-                        <Badge variant="outline" className="border-brand text-brand bg-brand/10 font-medium">
-                            Schritt 3 von 4
-                        </Badge>
+                        {/* Timer-Anzeige im Header */}
+                        <div className="flex items-center space-x-4">
+                            {isConnected && (
+                                <Badge variant="destructive" className="font-medium tabular-nums py-1 px-3 text-base">
+                                    <Timer className="w-4 h-4 mr-2" />
+                                    {formatTime(timeLeft)}
+                                </Badge>
+                            )}
+                            <Badge variant="outline" className="border-brand text-brand bg-brand/10 font-medium">
+                                Schritt 1 von 5
+                            </Badge>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -278,7 +310,8 @@ export default function InterviewPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-center py-6">
+                    {/* Button-Container mit Zusatztext */}
+                    <div className="flex flex-col items-center justify-center py-6">
                         {!isConnected ? (
                             <Button
                                 onClick={startInterview}
@@ -289,13 +322,19 @@ export default function InterviewPage() {
                                 {connecting ? "Verbinde..." : "Interview starten"}
                             </Button>
                         ) : (
-                            <Button
-                                onClick={endInterview}
-                                className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
-                            >
-                                <PhoneOff className="w-5 h-5 mr-3" />
-                                Interview beenden
-                            </Button>
+                            <>
+                                <Button
+                                    onClick={endInterview}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+                                >
+                                    <PhoneOff className="w-5 h-5 mr-3" />
+                                    Interview beenden
+                                </Button>
+                                <p className="text-gray-500 text-sm mt-4 text-center">
+                                    Wenn Sie fertig sind, drücken Sie auf &apos;Interview beenden&apos;.<br />
+                                    Die Weiterleitung kann einen Moment dauern, während Ihr Gespräch analysiert wird.
+                                </p>
+                            </>
                         )}
                     </div>
 

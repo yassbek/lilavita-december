@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, ArrowRight, Target, Briefcase, Megaphone, DollarSign } from "lucide-react"
+import { CheckCircle, Clock, ArrowRight, Target, Briefcase, Megaphone, DollarSign, ClipboardCheck } from "lucide-react"
 
 export default function CompletionPage() {
     const router = useRouter()
@@ -22,8 +22,9 @@ export default function CompletionPage() {
         return () => clearTimeout(timer)
     }, [])
 
-    // NEU: Status der Schritte aktualisiert
+    // NEU: "Readiness Assessment" hinzugefügt und Status aktualisiert
     const applicationSteps = [
+        { title: "Readiness Assessment", icon: ClipboardCheck, status: "completed", path: `/preparation_readiness?applicationId=${applicationId}` },
         { title: "Impact-Reife", icon: Target, status: "completed", path: `/preparation_impact?applicationId=${applicationId}` },
         { title: "Marketing & Positionierung", icon: Megaphone, status: "completed", path: `/preparation_marketing?applicationId=${applicationId}` },
         { title: "Finanzierungs-Reife", icon: DollarSign, status: "next", path: `/preparation_finance?applicationId=${applicationId}` },
@@ -38,7 +39,6 @@ export default function CompletionPage() {
         if (nextStep) {
             router.push(nextStep.path);
         } else {
-            // Wenn kein nächster Schritt da ist, ist der Prozess fertig
             router.push(`/completion_final?applicationId=${applicationId}`);
         }
     };
@@ -59,7 +59,7 @@ export default function CompletionPage() {
                             </div>
                         </div>
                         <Badge variant="outline" className="border-brand text-brand">
-                            Schritt 3 von 5 abgeschlossen
+                            Schritt {completedSteps.length} von {applicationSteps.length} abgeschlossen
                         </Badge>
                     </div>
                 </div>
@@ -95,9 +95,10 @@ export default function CompletionPage() {
                                     const isNext = step.status === 'next';
                                     const isPending = step.status === 'pending';
                                     
-                                    let Icon = CheckCircle;
-                                    if (isNext) Icon = ArrowRight;
-                                    if (isPending) Icon = Clock;
+                                    
+                                    let StatusIcon = CheckCircle;
+                                    if (isNext) StatusIcon = ArrowRight;
+                                    if (isPending) StatusIcon = Clock;
 
                                     return (
                                         <div key={index} className={`flex items-start space-x-4 p-4 rounded-lg ${isNext ? 'bg-brand/10' : ''}`}>
@@ -105,7 +106,7 @@ export default function CompletionPage() {
                                                 ${isCompleted ? 'bg-green-100' : ''}
                                                 ${isNext ? 'bg-brand' : ''}
                                                 ${isPending ? 'bg-gray-100' : ''}`}>
-                                                <Icon className={`w-5 h-5 
+                                                <StatusIcon className={`w-5 h-5 
                                                     ${isCompleted ? 'text-green-600' : ''}
                                                     ${isNext ? 'text-black' : ''}
                                                     ${isPending ? 'text-gray-400' : ''}`} />
@@ -133,7 +134,7 @@ export default function CompletionPage() {
                             </CardHeader>
                             <CardContent className="text-blue-800 space-y-4">
                                <p>
-                                   Die Hälfte der Interviews ist geschafft! Jedes Gespräch liefert uns wertvolle Einblicke.
+                                   Mehr als die Hälfte der Interviews ist geschafft! Jedes Gespräch liefert uns wertvolle Einblicke.
                                </p>
                                <p>
                                    Nimm dir kurz Zeit, um dich auf das nächste Thema vorzubereiten. Alle nötigen Informationen findest du auf der nächsten Seite.
@@ -141,7 +142,7 @@ export default function CompletionPage() {
                                <Button onClick={goToNextStep} size="lg" className="w-full bg-brand hover:bg-brand/90 text-black font-bold">
                                     Weiter zu &quot;{nextStep?.title}&quot;
                                     <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
+                               </Button>
                             </CardContent>
                         </Card>
                     </div>

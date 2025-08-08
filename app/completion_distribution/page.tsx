@@ -1,18 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-
 import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, Mail, Calendar, Target, Briefcase, Megaphone, DollarSign } from "lucide-react"
+import { CheckCircle, Clock, Mail, Calendar, Target, Briefcase, Megaphone, DollarSign, ClipboardCheck } from "lucide-react"
 
 export default function CompletionPage() {
-   
-    
-    
-    
     const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
@@ -22,24 +17,21 @@ export default function CompletionPage() {
         return () => clearTimeout(timer)
     }, [])
 
-    // NEU: Alle Schritte als "completed" markiert
+    // NEU: Alle fünf Schritte, inkl. "Readiness Assessment", als "completed" markiert
     const applicationSteps = [
-        { title: "Readiness", icon: Target, status: "completed" },
+        { title: "Readiness Assessment", icon: ClipboardCheck, status: "completed" },
         { title: "Impact-Reife", icon: Target, status: "completed" },
         { title: "Marketing & Positionierung", icon: Megaphone, status: "completed" },
         { title: "Finanzierungs-Reife", icon: DollarSign, status: "completed" },
         { title: "Wachstum & Vertrieb", icon: Briefcase, status: "completed" }
     ]
 
-    // NEU: Definiert die finalen Schritte nach den Interviews
     const finalReviewSteps = [
         { title: "Prüfung der Bewerbung", description: "Unser Team prüft alle deine Interviews und Unterlagen.", timeframe: "3-5 Werktage", icon: Clock },
         { title: "Erstes Feedback", description: "Du erhältst eine erste Rückmeldung zu deinem gesamten Readiness Assessment.", timeframe: "ca. 1 Woche", icon: Mail },
         { title: "Entscheidung", description: "Finale Entscheidung über die Aufnahme in den Accelerator.", timeframe: "ca. 2 Wochen", icon: CheckCircle },
         { title: "Programmstart", description: "Bei einer Zusage beginnt deine Reise im Accelerator.", timeframe: "Nächster Jahrgang", icon: Calendar },
     ]
-
-    
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -117,16 +109,19 @@ export default function CompletionPage() {
                                 <CardDescription>Alle fünf Bereiche wurden erfolgreich erfasst.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {applicationSteps.map((step, index) => (
-                                    <div key={index} className="text-left p-3 bg-gray-50 border rounded-lg flex items-center space-x-3">
-                                        <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center flex-shrink-0">
-                                            <CheckCircle className="w-5 h-5 text-green-600" />
+                                {applicationSteps.map((step, index) => {
+                                    const Icon = step.icon;
+                                    return (
+                                        <div key={index} className="text-left p-3 bg-gray-50 border rounded-lg flex items-center space-x-3">
+                                            <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center flex-shrink-0">
+                                                <Icon className="w-5 h-5 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium text-sm text-gray-900">{step.title}</h4>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-medium text-sm text-gray-900">{step.title}</h4>
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </CardContent>
                         </Card>
                     </div>
@@ -134,7 +129,6 @@ export default function CompletionPage() {
 
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                   
                     <Button variant="outline" onClick={() => window.open("mailto:applications@impactfactory.de", "_blank")} size="lg">
                         <Mail className="w-4 h-4 mr-2" />
                         Kontakt aufnehmen

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, ArrowRight, Target, Briefcase, Megaphone, DollarSign } from "lucide-react"
+import { CheckCircle, Clock, ArrowRight, Target, Briefcase, Megaphone, DollarSign, ClipboardCheck } from "lucide-react"
 
 export default function CompletionPage() {
     const router = useRouter()
@@ -22,15 +22,18 @@ export default function CompletionPage() {
         return () => clearTimeout(timer)
     }, [])
 
-    // NEU: Reihenfolge der Schritte angepasst
+    // NEU: Reihenfolge der Schritte angepasst, mit "Impact-Reife" als abgeschlossen
     const applicationSteps = [
+        { title: "Readiness Assessment", icon: ClipboardCheck, status: "completed", path: `/preparation_readiness?applicationId=${applicationId}` },
         { title: "Impact-Reife", icon: Target, status: "completed", path: `/preparation_impact?applicationId=${applicationId}` },
         { title: "Marketing & Positionierung", icon: Megaphone, status: "next", path: `/preparation_marketing?applicationId=${applicationId}` },
         { title: "Finanzierungs-Reife", icon: DollarSign, status: "pending", path: `/preparation_finance?applicationId=${applicationId}` },
         { title: "Wachstum & Vertrieb", icon: Briefcase, status: "pending", path: `/preparation_distribution?applicationId=${applicationId}` }
     ]
-
-    const completedStep = applicationSteps.find(step => step.status === "completed");
+    
+    // Logik angepasst: Der 'completedStep' ist der letzte im Array mit Status 'completed'
+    const completedSteps = applicationSteps.filter(step => step.status === 'completed');
+    const completedStep = completedSteps.length > 0 ? completedSteps[completedSteps.length - 1] : null;
     const nextStep = applicationSteps.find(step => step.status === "next");
 
     const goToNextStep = () => {
@@ -57,7 +60,7 @@ export default function CompletionPage() {
                             </div>
                         </div>
                         <Badge variant="outline" className="border-brand text-brand">
-                            Schritt 2 von 5 abgeschlossen
+                            Schritt {completedSteps.length} von {applicationSteps.length} abgeschlossen
                         </Badge>
                     </div>
                 </div>
@@ -74,7 +77,7 @@ export default function CompletionPage() {
                         {completedStep?.title}-Interview erfolgreich!
                     </h2>
                     <p className={`text-gray-600 mt-2 max-w-2xl mx-auto transition-opacity duration-700 delay-200 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Super, der erste Teil ist geschafft. Deine Antworten werden nun verarbeitet. Mach dich bereit für den nächsten Schritt.
+                        Super, der nächste Teil ist geschafft. Deine Antworten werden nun verarbeitet. Mach dich bereit für den nächsten Schritt.
                     </p>
                 </div>
 
@@ -139,7 +142,7 @@ export default function CompletionPage() {
                                <Button onClick={goToNextStep} size="lg" className="w-full bg-brand hover:bg-brand/90 text-black font-bold">
                                     Weiter zu &quot;{nextStep?.title}&quot;
                                     <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
+                               </Button>
                             </CardContent>
                         </Card>
                     </div>

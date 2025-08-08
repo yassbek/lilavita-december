@@ -5,7 +5,6 @@ import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CheckCircle, Lightbulb, TrendingUp, Handshake, Briefcase, ArrowRight, Info } from "lucide-react" // Megaphone als neues Icon hinzugefügt, falls verfügbar, sonst Lightbulb
 
@@ -114,9 +113,7 @@ export default function PreparationPage() {
                                 <p className="text-gray-600">Mach dich bereit für dein KI-Interview</p>
                             </div>
                         </div>
-                        <Badge variant="outline" className="border-brand text-brand">
-                            Schritt 2 von 4
-                        </Badge>
+                        
                     </div>
                 </div>
             </header>

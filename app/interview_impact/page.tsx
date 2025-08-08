@@ -7,7 +7,8 @@ import { useConversation } from "@elevenlabs/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User } from "lucide-react"
+// 1. Timer-Icon ist importiert
+import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User, Timer } from "lucide-react"
 
 export default function InterviewPage() {
     const router = useRouter()
@@ -25,6 +26,10 @@ export default function InterviewPage() {
     const streamRef = useRef<MediaStream | null>(null)
     const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
 
+    // 2. State für den Timer ist vorhanden
+    const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 Minuten in Sekunden
+    const [isTimerActive, setIsTimerActive] = useState(false);
+
     const appendToTranscript = useCallback((role: "user" | "ai", text: string) => {
         setTranscript((prev) => [...prev, { role, text, timestamp: new Date().toISOString() }])
     }, [])
@@ -34,10 +39,14 @@ export default function InterviewPage() {
             setIsConnected(true)
             setConnecting(false)
             setConnectionError(null)
+            // 3. Timer wird bei Verbindung gestartet
+            setIsTimerActive(true);
         },
         onDisconnect: () => {
             setIsConnected(false)
             setConnecting(false)
+            // 4. Timer wird bei Trennung gestoppt
+            setIsTimerActive(false);
         },
         onMessage: (props: { message: string; source: "user" | "ai" }) => {
             appendToTranscript(props.source, props.message);
@@ -103,6 +112,7 @@ export default function InterviewPage() {
         };
     }, [conversation, isConnected]);
 
+    // HINZUGEFÜGT: Diese Funktion hat in Ihrer Version gefehlt.
     const startInterview = async () => {
         setConnectionError(null)
         if (!hasPermissions) {
@@ -111,8 +121,10 @@ export default function InterviewPage() {
         }
         setConnecting(true)
         try {
+            // NOTE: This agentId is from the `impact` file you first sent.
+            // Make sure this is the correct ID for this component.
             await conversation.startSession({
-                agentId: "agent_8401k1zv0y5ye8rvgys8n8pchnhk",
+                agentId: "agent_8401k1zv0y5ye8rvgys8n8pchnhk", 
                 connectionType: "webrtc",
             })
         } catch (error) {
@@ -122,11 +134,12 @@ export default function InterviewPage() {
             }
             setConnectionError(message);
             setConnecting(false);
-            console.error("ElevenLabs startSession error:", error);
         }
     }
 
-    const endInterview = async () => {
+    // 5. endInterview ist korrekt in useCallback verpackt
+    const endInterview = useCallback(async () => {
+        setIsTimerActive(false); // Timer anhalten
         await conversation.endSession();
 
         const params = new URLSearchParams(searchParams);
@@ -137,14 +150,12 @@ export default function InterviewPage() {
             return;
         }
         
-        // Überprüfung, ob das Transkript leer ist
         if (!transcript || transcript.length === 0) {
             console.warn("WARN: Transkript ist leer. Keine Analyse durchgeführt.");
             router.push(`/completion_impact?${params.toString()}`);
             return;
         }
         
-        // Sende das Transkript als Array. Die API-Route wird es korrekt als JSON-Array verarbeiten.
         fetch(`/api/analyze-transcript?type=impact`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -154,8 +165,31 @@ export default function InterviewPage() {
         .then(data => console.log("Gemini analyze-transcript response:", data))
         .catch(err => console.error("Error calling analyze-transcript:", err));
 
-        // Leite sofort zur Abschlussseite weiter, da die Analyse im Hintergrund läuft
         router.push(`/completion_impact?${params.toString()}`);
+    }, [applicationId, conversation, router, searchParams, transcript]);
+
+
+    // 6. useEffect für Timer-Logik ist vorhanden
+    useEffect(() => {
+        if (!isTimerActive || !isConnected) return;
+
+        if (timeLeft <= 0) {
+            endInterview();
+            return;
+        }
+
+        const intervalId = setInterval(() => {
+            setTimeLeft((prevTime) => prevTime - 1);
+        }, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [isTimerActive, isConnected, timeLeft, endInterview]);
+
+    // 7. Funktion zur Zeitformatierung ist vorhanden
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     };
     
     return (
@@ -180,9 +214,18 @@ export default function InterviewPage() {
                                 </div>
                             </div>
                         </div>
-                        <Badge variant="outline" className="border-brand text-brand bg-brand/10 font-medium">
-                            Schritt 3 von 4
-                        </Badge>
+                        {/* 8. Timer-Anzeige im Header ist vorhanden */}
+                        <div className="flex items-center space-x-4">
+                            {isConnected && (
+                                <Badge variant="destructive" className="font-medium tabular-nums py-1 px-3 text-base">
+                                    <Timer className="w-4 h-4 mr-2" />
+                                    {formatTime(timeLeft)}
+                                </Badge>
+                            )}
+                            <Badge variant="outline" className="border-brand text-brand bg-brand/10 font-medium">
+                                Schritt 2 von 5
+                            </Badge>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -262,7 +305,7 @@ export default function InterviewPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-center py-6">
+                    <div className="flex flex-col items-center justify-center py-6">
                         {!isConnected ? (
                             <Button
                                 onClick={startInterview}
@@ -273,13 +316,19 @@ export default function InterviewPage() {
                                 {connecting ? "Verbinde..." : "Interview starten"}
                             </Button>
                         ) : (
-                            <Button
-                                onClick={endInterview}
-                                className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
-                            >
-                                <PhoneOff className="w-5 h-5 mr-3" />
-                                Interview beenden
-                            </Button>
+                            <>
+                                <Button
+                                    onClick={endInterview}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+                                >
+                                    <PhoneOff className="w-5 h-5 mr-3" />
+                                    Interview beenden
+                                </Button>
+                                <p className="text-gray-500 text-sm mt-4 text-center">
+                                    Wenn Sie fertig sind, drücken Sie auf &apos;Interview beenden&apos;.<br />
+                                    Die Weiterleitung kann einen Moment dauern, während Ihr Gespräch analysiert wird.
+                                </p>
+                            </>
                         )}
                     </div>
 

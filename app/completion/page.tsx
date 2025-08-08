@@ -1,47 +1,47 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation" // useSearchParams importieren
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Clock, Mail, Calendar, Users, Cog, Target } from "lucide-react"
+import { CheckCircle, Clock, ArrowRight, Target, Briefcase, Megaphone, DollarSign, ClipboardCheck } from "lucide-react"
 
 export default function CompletionPage() {
     const router = useRouter()
-    const searchParams = useSearchParams(); // Hook verwenden, um Query-Parameter zu lesen
-    const applicationId = searchParams.get("applicationId"); // application_id aus der URL holen
+    const searchParams = useSearchParams();
+    const applicationId = searchParams.get("applicationId");
     
     const [showSuccess, setShowSuccess] = useState(false)
 
     useEffect(() => {
-        // Simple Animation für die Erfolgsanzeige
         const timer = setTimeout(() => {
             setShowSuccess(true)
         }, 300)
-
         return () => clearTimeout(timer)
     }, [])
-    
-    // Die Logik für den "Zurück zum Dashboard" Button muss angepasst werden,
-    // um die application_id beizubehalten
-    const handleNextStep = () => {
-        if (applicationId) {
-            router.push(`/preparation_impact?applicationId=${applicationId}`);
+
+    // NEU: Prozess-Schritte mit "Readiness Assessment" als erstem, abgeschlossenem Schritt
+    const applicationSteps = [
+        { title: "Readiness Assessment", icon: ClipboardCheck, status: "completed", path: `/preparation_readiness?applicationId=${applicationId}` },
+        { title: "Impact-Reife", icon: Target, status: "next", path: `/preparation_impact?applicationId=${applicationId}` },
+        { title: "Marketing & Positionierung", icon: Megaphone, status: "pending", path: `/preparation_marketing?applicationId=${applicationId}` },
+        { title: "Finanzierungs-Reife", icon: DollarSign, status: "pending", path: `/preparation_finance?applicationId=${applicationId}` },
+        { title: "Wachstum & Vertrieb", icon: Briefcase, status: "pending", path: `/preparation_distribution?applicationId=${applicationId}` }
+    ]
+
+    const completedStep = applicationSteps.find(step => step.status === "completed");
+    const nextStep = applicationSteps.find(step => step.status === "next");
+
+    const goToNextStep = () => {
+        if (nextStep) {
+            router.push(nextStep.path);
         } else {
-            // Optional: Handle the case where applicationId is missing
-            console.error("Application ID fehlt. Kann nicht zum nächsten Schritt leiten.");
-            router.push("/preparation_impact"); // Fallback-Route
+            // Fallback, falls alle Schritte abgeschlossen sind
+            router.push("/");
         }
     };
-
-    const nextSteps = [
-        { title: "Prüfung der Bewerbung", description: "Unser Team prüft dein Interview und deine Unterlagen.", timeframe: "3-5 Werktage", icon: Clock },
-        { title: "Erstes Feedback", description: "Du erhältst eine erste Rückmeldung zu deinem Readiness Assessment.", timeframe: "ca. 1 Woche", icon: Mail },
-        { title: "Entscheidung", description: "Finale Entscheidung über die Aufnahme in den Accelerator.", timeframe: "ca. 2 Wochen", icon: CheckCircle },
-        { title: "Programmstart", description: "Bei einer Zusage beginnt deine Reise im Accelerator.", timeframe: "Nächster Jahrgang", icon: Calendar },
-    ]
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -54,12 +54,12 @@ export default function CompletionPage() {
                                 <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" width={48} height={48} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Bewerbung Abgeschlossen</h1>
-                                <p className="text-gray-600">Vielen Dank für deine Einreichung</p>
+                                <h1 className="text-2xl font-bold text-gray-900">Meilenstein erreicht!</h1>
+                                <p className="text-gray-600">Dein {completedStep?.title}-Interview ist abgeschlossen.</p>
                             </div>
                         </div>
-                        <Badge variant="outline" className="border-green-600 text-green-700 bg-green-50 font-medium">
-                            Schritt 4 von 4 - Abgeschlossen
+                        <Badge variant="outline" className="border-brand text-brand">
+                            Schritt 1 von 5 abgeschlossen
                         </Badge>
                     </div>
                 </div>
@@ -73,36 +73,50 @@ export default function CompletionPage() {
                         <CheckCircle className={`transition-all duration-700 ${showSuccess ? "w-12 h-12 text-green-600" : "w-10 h-10 text-gray-400"}`} />
                     </div>
                     <h2 className={`text-3xl font-bold mt-4 transition-opacity duration-700 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Erfolgreich eingereicht!
+                        {completedStep?.title} erfolgreich!
                     </h2>
                     <p className={`text-gray-600 mt-2 max-w-2xl mx-auto transition-opacity duration-700 delay-200 ${showSuccess ? "opacity-100" : "opacity-0"}`}>
-                        Deine Bewerbung für den Impact Factory Accelerator wurde erfolgreich übermittelt. Unser Team wird dein Interview prüfen und sich bald bei dir melden.
+                        Super, der erste Teil ist geschafft. Deine Antworten werden nun verarbeitet. Mach dich bereit für den nächsten Schritt.
                     </p>
                 </div>
 
-                {/* Grid-Layout für die nächsten Schritte und Zusammenfassung */}
+                {/* Grid-Layout */}
                 <div className="grid lg:grid-cols-3 gap-8 mb-8">
-                    {/* Nächste Schritte (nimmt mehr Platz ein) */}
-                    <Card className="lg:col-span-2 border-brand/50 bg-brand/5">
+                    {/* Prozess-Übersicht */}
+                    <Card className="lg:col-span-2">
                         <CardHeader>
-                            <CardTitle className="text-amber-900">Wie geht es weiter?</CardTitle>
-                            <CardDescription className="text-amber-800">Das kannst du in den nächsten Wochen erwarten.</CardDescription>
+                            <CardTitle>Dein Bewerbungsprozess</CardTitle>
+                            <CardDescription>Ein Schritt nach dem anderen. Das ist dein aktueller Stand.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-6">
-                                {nextSteps.map((step, index) => {
-                                    const Icon = step.icon
+                                {applicationSteps.map((step, index) => {
+                                    const isCompleted = step.status === 'completed';
+                                    const isNext = step.status === 'next';
+                                    const isPending = step.status === 'pending';
+                                    
+                                    let Icon = CheckCircle;
+                                    if (isNext) Icon = ArrowRight;
+                                    if (isPending) Icon = Clock;
+
                                     return (
-                                        <div key={index} className="flex items-start space-x-4">
-                                            <div className="flex-shrink-0 w-10 h-10 bg-brand/10 rounded-lg flex items-center justify-center">
-                                                <Icon className="w-5 h-5 text-brand" />
+                                        <div key={index} className={`flex items-start space-x-4 p-4 rounded-lg ${isNext ? 'bg-brand/10' : ''}`}>
+                                            <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center 
+                                                ${isCompleted ? 'bg-green-100' : ''}
+                                                ${isNext ? 'bg-brand' : ''}
+                                                ${isPending ? 'bg-gray-100' : ''}`}>
+                                                <Icon className={`w-5 h-5 
+                                                    ${isCompleted ? 'text-green-600' : ''}
+                                                    ${isNext ? 'text-black' : ''}
+                                                    ${isPending ? 'text-gray-400' : ''}`} />
                                             </div>
                                             <div>
-                                                <h4 className="font-medium text-amber-900">{step.title}</h4>
-                                                <p className="text-sm text-amber-800 mt-0.5">{step.description}</p>
-                                                <Badge variant="outline" className="mt-2 border-brand/40 text-amber-800 text-xs">
-                                                    {step.timeframe}
-                                                </Badge>
+                                                <h4 className={`font-medium ${isPending ? 'text-gray-500' : 'text-gray-900'}`}>{step.title}</h4>
+                                                <p className="text-sm text-gray-600 mt-0.5">
+                                                    {isCompleted && "Erfolgreich abgeschlossen."}
+                                                    {isNext && "Das ist dein nächster Schritt."}
+                                                    {isPending && "Steht als nächstes an."}
+                                                </p>
                                             </div>
                                         </div>
                                     )
@@ -111,46 +125,32 @@ export default function CompletionPage() {
                         </CardContent>
                     </Card>
                     
-                    {/* Zusammenfassung des Interviews */}
+                    {/* Motivations-Karte */}
                     <div className="space-y-8">
-                        <Card>
+                        <Card className="bg-blue-50 border-blue-200">
                             <CardHeader>
-                                <CardTitle>Interview-Zusammenfassung</CardTitle>
-                                <CardDescription>Dein Gespräch wurde aufgezeichnet und wird nun analysiert.</CardDescription>
+                                <CardTitle className="text-blue-900">Sehr gut gemacht!</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="text-left p-3 bg-blue-50 rounded-lg flex items-center space-x-3">
-                                    <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center flex-shrink-0"><Cog className="w-5 h-5 text-blue-600" /></div>
-                                    <div><h4 className="font-medium text-sm text-blue-900">Technologie-Reife</h4></div>
-                                </div>
-                                <div className="text-left p-3 bg-purple-50 rounded-lg flex items-center space-x-3">
-                                    <div className="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center flex-shrink-0"><Users className="w-5 h-5 text-purple-600" /></div>
-                                    <div><h4 className="font-medium text-sm text-purple-900">Team & Organisation</h4></div>
-                                </div>
-                                <div className="text-left p-3 bg-green-50 rounded-lg flex items-center space-x-3">
-                                    <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center flex-shrink-0"><Target className="w-5 h-5 text-green-600" /></div>
-                                    <div><h4 className="font-medium text-sm text-green-900">Impact-Reife</h4></div>
-                                </div>
+                            <CardContent className="text-blue-800 space-y-4">
+                               <p>
+                                   Jedes Interview hilft uns, dein Startup besser zu verstehen. Die Ergebnisse bauen aufeinander auf und ergeben am Ende ein Gesamtbild.
+                               </p>
+                               <p>
+                                   Nimm dir kurz Zeit, um dich auf das nächste Thema vorzubereiten. Alle nötigen Informationen findest du auf der nächsten Seite.
+                               </p>
+                               <Button onClick={goToNextStep} size="lg" className="w-full bg-brand hover:bg-brand/90 text-black font-bold">
+                                    Weiter zu &quot;{nextStep?.title}&quot;
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                               </Button>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
 
-                {/* Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button onClick={handleNextStep} size="lg" className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3">
-                        Zur Vorbereitung des Impact-Interviews
-                    </Button>
-                    <Button variant="outline" onClick={() => window.open("mailto:applications@impactfactory.de", "_blank")} size="lg">
-                        <Mail className="w-4 h-4 mr-2" />
-                        Kontakt aufnehmen
-                    </Button>
-                </div>
-
                 {/* Fußnote */}
                 <div className="mt-12 text-center">
                     <p className="text-sm text-gray-500">
-                        Bewerbung eingereicht am {new Date().toLocaleDateString("de-DE", { year: "numeric", month: "long", day: "numeric" })}
+                        Interview abgeschlossen am {new Date().toLocaleDateString("de-DE", { year: "numeric", month: "long", day: "numeric" })}
                     </p>
                 </div>
             </main>
