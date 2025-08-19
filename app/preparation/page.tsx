@@ -21,7 +21,6 @@ export default function PreparationPage() {
       title: "Technologie-Reife",
       description: "Eure Produktentwicklung und technische Reife",
       topics: [
-        "Aktueller Entwicklungsstand (MVP, Prototyp, marktreif)",
         "Technische Hürden und wie ihr sie gemeistert habt",
         "Skalierbarkeit eurer technischen Lösung",
         "Geistiges Eigentum und Patente",
@@ -29,36 +28,31 @@ export default function PreparationPage() {
     },
     {
       icon: Users,
-      title: "Team & Organisation",
-      description: "Eure Teamzusammensetzung und Organisationsstruktur",
+      title: "Team- Reife",
+      description: "Eure Teamzusammensetzung",
       topics: [
         "Teamaufstellung und Kernkompetenzen",
         "Bisherige Erfahrung und Erfolge",
-        "Rollenverteilung und wie ihr Entscheidungen trefft",
-        "Unternehmenskultur und gemeinsame Werte",
       ],
     },
     {
       icon: Target,
-      title: "Impact-Reife",
-      description: "Eure sozialen und ökologischen Wirkungsziele",
+      title: "Organisations-Reife",
+      description: "Eure Organisationsstruktur",
       topics: [
-        "Klare Impact-Mission und Wirkungslogik (Theory of Change)",
-        "Zielgruppen und Validierung des Problems",
-        "Wirkungsmessung und KPIs",
-        "Bezug zu den UN SDGs oder ähnlichen Rahmenwerken",
+        "Rollenverteilung und wie ihr Entscheidungen trefft",
+        "Unternehmenskultur und gemeinsame Werte",
       ],
     },
   ]
 
   const preparationChecklist = [
-    "Ich habe unsere Mission und Wirkungsziele verinnerlicht",
-    "Ich kann unseren aktuellen Entwicklungsstand klar erklären",
     "Ich kenne die Stärken und Schwächen unseres Teams",
-    "Ich habe über unseren Zielmarkt und unsere Zielgruppen nachgedacht",
-    "Ich kann unser Geschäftsmodell und unsere Einnahmequellen besprechen",
-    "Ich habe mir unsere Wettbewerbsvorteile überlegt",
     "Ich bin bereit, über gemeisterte Herausforderungen zu sprechen",
+    "Ich kenne unsere Prozesse und bin bereit, darüber zu sprechen",
+    "Ich weiß um unsere organisatorischen Strukturen Bescheid",
+    "Ich kenne den Stand unserer technischen, insbesondere digitalen Ausstattung",
+    "Ich kenne unsere technischen Stärken und Schwächen",
   ]
 
   const handleCheckboxChange = (index: number, checked: boolean) => {
@@ -117,7 +111,7 @@ export default function PreparationPage() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-700 mb-4">
-              In unserem Bewerbungsprozess wollen wir verstehen, wie startklar dein Startup in den Bereichen Technologie, Team & Organisation und Impact ist. Das KI-gestützte Gespräch hilft uns dabei, eure Reife und euer Potenzial einzuschätzen.
+              In unserem Bewerbungsprozess wollen wir verstehen, wie startklar dein Startup in den Bereichen Technologie, Team & Organisation ist. Das KI-gestützte Gespräch hilft uns dabei, eure Reife und euer Potenzial einzuschätzen.
             </p>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
