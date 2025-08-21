@@ -279,23 +279,15 @@ export default function InterviewPage() {
                             </Card>
 
                             {/* KI-Agent */}
-                            <Card className="overflow-hidden border-2 border-brand shadow-lg">
+                            <Card className={`overflow-hidden border-2 border-brand shadow-lg transition-transform duration-300 ease-in-out ${conversation.isSpeaking ? 'scale-[1.02]' : 'scale-100'}`}>
                                 <CardContent className="p-0 relative">
-                                    <div className="aspect-video bg-gradient-to-br from-brand via-amber-400 to-yellow-400 flex items-center justify-center">
-                                        <div className="text-center">
-                                            <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                                                <MessageSquare className="w-12 h-12 text-white" />
-                                            </div>
-                                            <h3 className="text-white font-bold text-xl mb-1">KI Interviewer</h3>
-                                            <p className="text-white text-sm opacity-90">Impact Factory</p>
-                                            {conversation.isSpeaking && (
-                                                <div className="mt-3 flex items-center justify-center space-x-1.5">
-                                                    <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                                    <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                                    <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    <div className="aspect-video relative">
+                                        <Image
+                                            src="/roman_profile.jpeg"
+                                            alt="Profilbild des KI-Interviewers Roman"
+                                            fill
+                                            className="object-cover"
+                                        />
                                     </div>
                                     <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full">
                                         <span className="text-white text-sm font-medium">KI Agent</span>

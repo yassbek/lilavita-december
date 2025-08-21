@@ -7,7 +7,6 @@ import { useConversation } from "@elevenlabs/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-// 1. Timer-Icon importieren
 import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User, Timer } from "lucide-react"
 
 export default function InterviewPage() {
@@ -26,7 +25,6 @@ export default function InterviewPage() {
     const streamRef = useRef<MediaStream | null>(null)
     const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
     
-    // 2. State für den Timer hinzufügen
     const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 Minuten in Sekunden
     const [isTimerActive, setIsTimerActive] = useState(false);
 
@@ -39,13 +37,11 @@ export default function InterviewPage() {
             setIsConnected(true)
             setConnecting(false)
             setConnectionError(null)
-            // 3. Timer bei Verbindungsaufbau starten
             setIsTimerActive(true);
         },
         onDisconnect: () => {
             setIsConnected(false)
             setConnecting(false)
-            // 4. Timer bei Verbindungsabbruch anhalten
             setIsTimerActive(false);
         },
         onMessage: (props: { message: string; source: "user" | "ai" }) => {
@@ -138,7 +134,6 @@ export default function InterviewPage() {
         }
     }
 
-    // 5. endInterview in useCallback verpacken und Abhängigkeiten definieren
     const endInterview = useCallback(async () => {
         setIsTimerActive(false); // Timer anhalten
         await conversation.endSession();
@@ -169,7 +164,6 @@ export default function InterviewPage() {
         router.push(`/completion_distribution?${params.toString()}`);
     }, [applicationId, conversation, router, searchParams, transcript]);
 
-    // 6. useEffect für die Timer-Logik hinzufügen
     useEffect(() => {
         if (!isTimerActive || !isConnected) return;
 
@@ -185,7 +179,6 @@ export default function InterviewPage() {
         return () => clearInterval(intervalId);
     }, [isTimerActive, isConnected, timeLeft, endInterview]);
     
-    // 7. Funktion zur Zeitformatierung hinzufügen
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -204,7 +197,7 @@ export default function InterviewPage() {
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900">KI-gestütztes Interview</h1>
                                 <div className="flex items-center space-x-2 mt-1">
-                                    <p className="text-gray-600">Distribution-Assessment</p> {/* Angepasster Titel */}
+                                    <p className="text-gray-600">Distribution-Assessment</p>
                                     <Badge
                                         variant="outline"
                                         className={`px-2 py-0.5 text-xs ${isConnected ? "border-green-500 text-green-600 bg-green-50" : "border-gray-300 text-gray-600 bg-gray-50"}`}
@@ -214,7 +207,6 @@ export default function InterviewPage() {
                                 </div>
                             </div>
                         </div>
-                        {/* 8. Timer-Anzeige im Header hinzufügen */}
                         <div className="flex items-center space-x-4">
                             {isConnected && (
                                 <Badge variant="destructive" className="font-medium tabular-nums py-1 px-3 text-base">
@@ -274,23 +266,15 @@ export default function InterviewPage() {
                             </Card>
 
                             {/* KI-Agent */}
-                            <Card className="overflow-hidden border-2 border-brand shadow-lg">
+                            <Card className={`overflow-hidden border-2 border-brand shadow-lg transition-transform duration-300 ease-in-out ${conversation.isSpeaking ? 'scale-[1.02]' : 'scale-100'}`}>
                                 <CardContent className="p-0 relative">
-                                    <div className="aspect-video bg-gradient-to-br from-brand via-amber-400 to-yellow-400 flex items-center justify-center">
-                                        <div className="text-center">
-                                            <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                                                <MessageSquare className="w-12 h-12 text-white" />
-                                            </div>
-                                            <h3 className="text-white font-bold text-xl mb-1">KI Interviewer</h3>
-                                            <p className="text-white text-sm opacity-90">Impact Factory</p>
-                                            {conversation.isSpeaking && (
-                                                <div className="mt-3 flex items-center justify-center space-x-1.5">
-                                                    <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                                    <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                                    <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    <div className="aspect-video relative">
+                                        <Image
+                                            src="/klemens_profile.png"
+                                            alt="Profilbild des KI-Interviewers Klemens"
+                                            fill
+                                            className="object-cover"
+                                        />
                                     </div>
                                     <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full">
                                         <span className="text-white text-sm font-medium">KI Agent</span>
