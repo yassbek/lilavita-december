@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +17,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CheckCircle, User, MessageSquare, Camera, Mic, Info, ArrowRight, Loader2 } from "lucide-react"
+import { CheckCircle, User, MessageSquare, Camera, Mic, Info, ArrowRight, Loader2, UploadCloud, FileCheck2 } from "lucide-react"
+
+// Korrekte Imports für das Directus SDK
+import { createDirectus, staticToken, rest, uploadFiles, updateItem } from '@directus/sdk';
 
 // Mapping-Objekt zur Übersetzung des Branchen-Schlüssels in einen Anzeigenamen
 const SECTOR_MAP: { [key: string]: string } = {
@@ -33,9 +36,23 @@ export default function StartPage() {
   const router = useRouter()
   const searchParams = useSearchParams();
 
-  // State-Variablen für den Speed-Test
-  const [isTesting, setIsTesting] = useState(false);
+  // State-Variablen
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showLowSpeedAlert, setShowLowSpeedAlert] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Directus Client sicher mit statischem Token initialisieren.
+  const directusUrl = process.env.NEXT_PUBLIC_DIRECTUS_URL;
+  const directusToken = process.env.NEXT_PUBLIC_DIRECTUS_TOKEN;
+
+  if (!directusUrl || !directusToken) {
+    throw new Error("Directus URL or Token is not set in your environment variables.");
+  }
+
+  const directus = createDirectus(directusUrl)
+    .with(staticToken(directusToken))
+    .with(rest());
 
   const sectorKey = searchParams.get("branche");
   const sectorDisplayName = sectorKey ? SECTOR_MAP[sectorKey] || "Unbekannt" : "Unbekannt";
@@ -46,54 +63,85 @@ export default function StartPage() {
     sector: sectorDisplayName,
   }
 
-  // Diese Funktion leitet zur nächsten Seite weiter
   const navigateToNextPage = () => {
     const params = new URLSearchParams(searchParams);
     router.push(`/preparation?${params.toString()}`);
   }
 
-  // Funktion, die den Speed-Test durchführt und dann weiterleitet
-  const handleSpeedCheckAndContinue = async () => {
-    setIsTesting(true);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
+  const handleUploadAndContinue = async () => {
+    if (!selectedFile) {
+      alert("Bitte wähle zuerst dein Pitchdeck aus.");
+      return;
+    }
+    
+    setIsLoading(true);
 
     try {
-      // WICHTIG: Stelle sicher, dass diese Datei in deinem /public Ordner liegt
-      const fileUrl = '/speedtestfile.dat'; 
+      // -- SCHRITT 1: DATEI-UPLOAD --
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      console.log("Starte Upload...");
+      
+      // KORREKTUR: Verwende die korrekte uploadFiles Funktion
+      const fileUploadResult = await directus.request(uploadFiles(formData));
+      const fileId = fileUploadResult.id;
+      console.log('Datei erfolgreich hochgeladen. File ID:', fileId);
+
+      // Die ID der Application aus den URL-Parametern holen.
+      const applicantId = searchParams.get("applicationId");
+      if (!applicantId) {
+        throw new Error("Application-ID nicht in der URL gefunden! Der Upload kann nicht zugeordnet werden.");
+      }
+
+      // Den Application-Eintrag in Directus aktualisieren und die fileId zuweisen
+      // KORREKTUR: Verwende die korrekte updateItem Funktion
+      await directus.request(updateItem('applications', applicantId, {
+        pitchdeck: fileId
+      }));
+      console.log(`Application ${applicantId} wurde mit Pitchdeck ${fileId} aktualisiert.`);
+
+      // -- SCHRITT 2: SPEED-TEST --
+      console.log("Starte Geschwindigkeitstest...");
+      const fileUrl = '/speedtestfile.dat';
       const fileSizeInBytes = 5 * 1024 * 1024; // 5 MB
 
       const startTime = new Date().getTime();
       const response = await fetch(fileUrl + '?t=' + startTime);
 
       if (!response.ok) {
-        throw new Error(`Testdatei nicht gefunden (Status: ${response.status}). Bitte prüfe, ob die Datei im 'public'-Ordner liegt.`);
+        throw new Error(`Testdatei nicht gefunden (Status: ${response.status}).`);
       }
 
       await response.blob();
       const endTime = new Date().getTime();
-      
       const durationInSeconds = (endTime - startTime) / 1000;
-      
-      if (durationInSeconds < 0.1) { // Schutz vor Division durch Null / zu schnellen Ergebnissen
-          navigateToNextPage();
-          return;
+
+      if (durationInSeconds < 0.1) {
+        navigateToNextPage();
+        return;
       }
 
       const bitsLoaded = fileSizeInBytes * 8;
       const speedMbps = (bitsLoaded / durationInSeconds) / 1024 / 1024;
-
       console.log(`Geschwindigkeit: ${speedMbps.toFixed(2)} Mbit/s`);
 
-      // Prüfen, ob die Geschwindigkeit zu niedrig ist
       if (speedMbps < 20) {
-        setShowLowSpeedAlert(true); // Warn-Dialog anzeigen
+        setShowLowSpeedAlert(true);
       } else {
-        navigateToNextPage(); // Direkt weiterleiten
+        navigateToNextPage();
       }
     } catch (error) {
-        console.error("Fehler beim Geschwindigkeitstest:", error);
-        alert("Der Geschwindigkeitstest konnte nicht durchgeführt werden. Bitte prüfen Sie, ob die Test-Datei auf dem Server existiert und Ihre Verbindung aktiv ist.");
+      console.error("Ein Fehler ist aufgetreten:", error);
+      alert("Ein Fehler ist aufgetreten. Bitte überprüfe die Konsole für Details und versuche es erneut.");
     } finally {
-        setIsTesting(false);
+      setIsLoading(false);
     }
   }
 
@@ -159,44 +207,64 @@ export default function StartPage() {
                     Track. Wir freuen uns darauf, mehr über {userInfo.company} zu erfahren.
                 </CardDescription>
             </CardHeader>
+        </Card>
+
+        {/* Pitchdeck Upload Card */}
+        <Card className="mb-8 border-brand border-2">
+            <CardHeader>
+                <CardTitle>Schritt 1: Pitchdeck hochladen</CardTitle>
+                <CardDescription>
+                    Bitte lade dein aktuelles Pitchdeck hoch. Erlaubte Formate sind PDF, PPTX, Keynote. (max. 20 MB)
+                </CardDescription>
+            </CardHeader>
             <CardContent>
-                <div className="text-gray-700 space-y-4">
-                    <p>
-                        Um ein umfassendes Bild von eurem Startup zu bekommen, haben wir einen mehrstufigen Interview-Prozess entwickelt. Anstatt eines langen Gesprächs führen wir vier kurze, thematisch fokussierte Interviews mit unserem KI-Agenten durch.
-                    </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h4 className="font-medium text-blue-900 mb-2">Die vier Interview-Themen sind:</h4>
-                        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                            <li><b>Readiness:</b> Wie ausgereift ist euer Geschäftsmodell.</li>
-                            <li><b>Impact:</b> Eure Wirkungslogik und wie ihr sie messt.</li>
-                            <li><b>Marketing:</b> Eure Strategie zur Positionierung und Kundengewinnung.</li>
-                            <li><b>Finanzen:</b> Euer Geschäftsmodell, Finanzplan und Kapitalbedarf.</li>
-                            <li><b>Vertrieb:</b> Eure Pläne für Wachstum und Skalierung.</li>
-                        </ul>
-                        <p className="text-sm text-blue-800 mt-3">
-                            Jedes Interview dauert nur ca. 15-20 Minuten. Du wirst für jedes Gespräch eine separate Vorbereitungsseite sehen.
-                        </p>
-                    </div>
+                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".pdf,.pptx,.key"
+                    />
+                    
+                    {!selectedFile ? (
+                      <>
+                        <UploadCloud className="w-12 h-12 text-gray-400 mb-4" />
+                        <Button onClick={() => fileInputRef.current?.click()}>
+                            Datei auswählen
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-2">Noch keine Datei ausgewählt</p>
+                      </>
+                    ) : (
+                      <>
+                        <FileCheck2 className="w-12 h-12 text-green-500 mb-4" />
+                        <p className="font-semibold text-gray-800">{selectedFile.name}</p>
+                        <p className="text-sm text-gray-600">Größe: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <Button variant="link" className="text-brand p-0 h-auto mt-2" onClick={() => fileInputRef.current?.click()}>
+                            Andere Datei auswählen
+                        </Button>
+                      </>
+                    )}
                 </div>
             </CardContent>
         </Card>
 
         {/* Cookie- und Fortschrittshinweis */}
         <Card className="mb-8 bg-sky-50 border-sky-200">
-            <CardHeader className="flex flex-row items-center space-x-3">
-                <Info className="w-6 h-6 text-sky-700" />
-                <div>
-                    <CardTitle className="text-sky-900">Wichtiger Hinweis zur Speicherung deines Fortschritts</CardTitle>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sky-800">
-                    Wir verwenden notwendige Cookies, um deinen Fortschritt im Bewerbungsprozess zu speichern. Dies ermöglicht es dir, die Bewerbung jederzeit zu unterbrechen und innerhalb von <strong>7 Tagen</strong> an derselben Stelle fortzusetzen. Nach Ablauf dieser Frist werden deine Daten aus Sicherheitsgründen zurückgesetzt.
-                </p>
-                <p className="text-sm text-sky-700 mt-2">
-                    Mit dem Fortfahren stimmst du dieser Nutzung zu.
-                </p>
-            </CardContent>
+             <CardHeader className="flex flex-row items-center space-x-3">
+                 <Info className="w-6 h-6 text-sky-700" />
+                 <div>
+                     <CardTitle className="text-sky-900">Wichtiger Hinweis zur Speicherung deines Fortschritts</CardTitle>
+                 </div>
+             </CardHeader>
+             <CardContent>
+                 <p className="text-sky-800">
+                     Wir verwenden notwendige Cookies, um deinen Fortschritt im Bewerbungsprozess zu speichern. Dies ermöglicht es dir, die Bewerbung jederzeit zu unterbrechen und innerhalb von <strong>7 Tagen</strong> an derselben Stelle fortzusetzen. Nach Ablauf dieser Frist werden deine Daten aus Sicherheitsgründen zurückgesetzt.
+                 </p>
+                 <p className="text-sm text-sky-700 mt-2">
+                     Mit dem Fortfahren stimmst du dieser Nutzung zu.
+                 </p>
+             </CardContent>
         </Card>
 
         <div className="grid lg:grid-cols-3 gap-8 mb-8">
@@ -283,7 +351,7 @@ export default function StartPage() {
                         Damit stellen wir sicher, dass deine Verbindung für ein reibungsloses Gespräch ausreicht.
                     </p>
                     <p className="text-sm text-orange-800 mt-2">
-                        Bei einer instablien Verbindung besteht die Gefahr, dass das Interview abbricht und jeglicher Fortschritt verloren geht. Daher empfehlen wir eine Verbindung von mindestens <strong>20 Mbit/s</strong>.
+                        Bei einer instabilen Verbindung besteht die Gefahr, dass das Interview abbricht und jeglicher Fortschritt verloren geht. Daher empfehlen wir eine Verbindung von mindestens <strong>20 Mbit/s</strong>.
                     </p>
                 </CardContent>
             </Card>
@@ -292,15 +360,15 @@ export default function StartPage() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
           <Button
-            onClick={handleSpeedCheckAndContinue}
-            disabled={isTesting}
+            onClick={handleUploadAndContinue}
+            disabled={!selectedFile || isLoading}
             className="bg-brand hover:bg-brand/90 text-black font-bold px-8 py-3"
             size="lg"
           >
-            {isTesting ? (
+            {isLoading ? (
                 <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Prüfe Verbindung...
+                    Lädt hoch & prüft Verbindung...
                 </>
             ) : (
                 <>
@@ -315,22 +383,22 @@ export default function StartPage() {
         </div>
       </main>
 
-      {/* AlertDialog-Komponente für die Warnung bei langsamer Verbindung */}
+      {/* AlertDialog für langsame Verbindung */}
       <AlertDialog open={showLowSpeedAlert} onOpenChange={setShowLowSpeedAlert}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Langsame Internetverbindung</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      Ihre Internetgeschwindigkeit liegt unter den empfohlenen 20 Mbit/s. Ein stabiles Interview kann nicht garantiert werden. Wenn Sie fortfahren, tun Sie dies auf eigene Gefahr. Es kann zu Abbrüchen kommen, die einen Neustart erfordern.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                  <AlertDialogAction onClick={navigateToNextPage}>
-                      Trotzdem fortfahren
-                  </AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Langsame Internetverbindung</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Ihre Internetgeschwindigkeit liegt unter den empfohlenen 20 Mbit/s. Ein stabiles Interview kann nicht garantiert werden. Wenn Sie fortfahren, tun Sie dies auf eigene Gefahr. Es kann zu Abbrüchen kommen, die einen Neustart erfordern.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction onClick={navigateToNextPage}>
+                        Trotzdem fortfahren
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
       </AlertDialog>
     </div>
   )
