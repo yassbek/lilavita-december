@@ -7,7 +7,7 @@ import { useConversation } from "@elevenlabs/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User, Timer } from "lucide-react"
+import { MicOff, Phone, PhoneOff, Volume2, User, Timer } from "lucide-react"
 
 export default function InterviewPage() {
     const router = useRouter()
