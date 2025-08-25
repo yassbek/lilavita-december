@@ -7,7 +7,7 @@ import { useConversation } from "@elevenlabs/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MicOff, Phone, PhoneOff, Volume2, MessageSquare, User, Timer } from "lucide-react"
+import { MicOff, Phone, PhoneOff, Volume2, User, Timer, Video, VideoOff, ShieldCheck } from "lucide-react"
 
 export default function InterviewPage() {
     const router = useRouter()
@@ -16,7 +16,7 @@ export default function InterviewPage() {
 
     const [isConnected, setIsConnected] = useState(false)
     const [isMuted] = useState(false)
-    const [isCameraOff] = useState(false)
+    const [isCameraOff, setIsCameraOff] = useState(true)
     const [hasPermissions, setHasPermissions] = useState(false)
     const [permissionError, setPermissionError] = useState<string | null>(null)
     const [connecting, setConnecting] = useState(false)
@@ -24,12 +24,12 @@ export default function InterviewPage() {
     const videoRef = useRef<HTMLVideoElement>(null)
     const streamRef = useRef<MediaStream | null>(null)
     const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
-    const [interviewEnded, setInterviewEnded] = useState(false); // NEU: Status, um das Ende des Interviews zu speichern
+    const [interviewEnded, setInterviewEnded] = useState(false);
 
-    // Status für den Timer
-    const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 Minuten in Sekunden
+    const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+
+    const [timeLeft, setTimeLeft] = useState(20 * 60);
     const [isTimerActive, setIsTimerActive] = useState(false);
-
 
     const appendToTranscript = useCallback((role: "user" | "ai", text: string) => {
         setTranscript((prev) => [...prev, { role, text, timestamp: new Date().toISOString() }])
@@ -40,12 +40,12 @@ export default function InterviewPage() {
             setIsConnected(true)
             setConnecting(false)
             setConnectionError(null)
-            setIsTimerActive(true); // Timer starten, wenn die Verbindung steht
+            setIsTimerActive(true);
         },
         onDisconnect: () => {
             setIsConnected(false)
             setConnecting(false)
-            setIsTimerActive(false); // Timer anhalten
+            setIsTimerActive(false);
         },
         onMessage: (props: { message: string; source: "user" | "ai" }) => {
             appendToTranscript(props.source, props.message);
@@ -64,36 +64,35 @@ export default function InterviewPage() {
 
     useEffect(() => {
         let didCancel = false
-        async function setupCamera() {
+        async function setupMicrophone() {
             setPermissionError(null)
             try {
                 if (!navigator.mediaDevices?.getUserMedia) {
-                    setPermissionError("Kamera/Mikrofon wird nicht unterstützt.")
+                    setPermissionError("Mikrofon wird nicht unterstützt.")
                     return
                 }
-                const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
                 if (didCancel) return
                 streamRef.current = mediaStream
                 setHasPermissions(true)
             } catch {
-                setPermissionError("Kamera-/Mikrofonberechtigungen erforderlich.")
+                setPermissionError("Mikrofonberechtigung erforderlich.")
                 setHasPermissions(false)
             }
         }
-        setupCamera()
+        setupMicrophone()
         return () => {
             didCancel = true
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => track.stop())
-            }
+            streamRef.current?.getTracks().forEach((track) => track.stop())
+            videoStream?.getTracks().forEach((track) => track.stop())
         }
-    }, [])
+    }, [videoStream])
 
     useEffect(() => {
-        if (hasPermissions && !isCameraOff && videoRef.current && streamRef.current) {
-            videoRef.current.srcObject = streamRef.current;
+        if (videoRef.current && videoStream) {
+            videoRef.current.srcObject = videoStream;
         }
-    }, [hasPermissions, isCameraOff, videoRef, streamRef]);
+    }, [videoStream]);
 
     useEffect(() => {
         const handleBeforeUnload = () => {
@@ -107,15 +106,17 @@ export default function InterviewPage() {
         };
     }, [conversation, isConnected]);
 
-    // Die endInterview Funktion wird jetzt als useCallback deklariert, um sie stabil zu machen
-    // GEÄNDERT: endInterview ist nun von `interviewEnded` abhängig, um mehrfache Ausführung zu verhindern
     const endInterview = useCallback(async () => {
-        if (interviewEnded) return; // Verhindert, dass die Funktion mehrfach ausgeführt wird
+        if (interviewEnded) return;
         
-        setInterviewEnded(true); // NEU: Status auf "beendet" setzen
-        setIsTimerActive(false); // Timer anhalten
+        setInterviewEnded(true);
+        setIsTimerActive(false);
         await conversation.endSession();
         await sendTranscriptToDirectus();
+
+        videoStream?.getTracks().forEach(track => track.stop());
+        setVideoStream(null);
+        setIsCameraOff(true);
 
         const params = new URLSearchParams(searchParams);
         router.push(`/completion?${params.toString()}`);
@@ -128,34 +129,41 @@ export default function InterviewPage() {
         .then(res => res.json())
         .then(data => console.log("Gemini analyze-transcript response:", data))
         .catch(err => console.error("Error calling analyze-transcript:", err));
-    }, [applicationId, conversation, router, searchParams, transcript, interviewEnded]); // NEU: interviewEnded als Abhängigkeit hinzugefügt
+    }, [applicationId, conversation, router, searchParams, transcript, interviewEnded, videoStream]);
 
-
-    // Effekt für die Timer-Logik
     useEffect(() => {
-        // Timer läuft nur, wenn er aktiv ist und eine Verbindung besteht
         if (!isTimerActive || !isConnected) return;
-
-        // Wenn die Zeit abgelaufen ist, Interview beenden
         if (timeLeft <= 0) {
             endInterview();
             return;
         }
-
-        // Jede Sekunde die Zeit reduzieren
         const intervalId = setInterval(() => {
             setTimeLeft((prevTime) => prevTime - 1);
         }, 1000);
-
-        // Aufräumfunktion, um den Intervall zu stoppen
         return () => clearInterval(intervalId);
-    }, [isTimerActive, isConnected, timeLeft, endInterview]); // GEÄNDERT: endInterview zur Abhängigkeitsliste hinzugefügt
+    }, [isTimerActive, isConnected, timeLeft, endInterview]);
 
+    const toggleCamera = async () => {
+        if (isCameraOff) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setVideoStream(stream);
+                setIsCameraOff(false);
+            } catch (err) {
+                console.error("Kamerazugriff verweigert:", err);
+                setPermissionError("Kamerazugriff wurde verweigert.");
+            }
+        } else {
+            videoStream?.getTracks().forEach(track => track.stop());
+            setVideoStream(null);
+            setIsCameraOff(true);
+        }
+    };
 
     const startInterview = async () => {
         setConnectionError(null)
         if (!hasPermissions) {
-            setPermissionError("Berechtigungen sind erforderlich.")
+            setPermissionError("Mikrofon-Berechtigung ist erforderlich.")
             return
         }
         setConnecting(true)
@@ -196,7 +204,6 @@ export default function InterviewPage() {
         }
     }
 
-    // Funktion zur Zeitformatierung
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -206,114 +213,107 @@ export default function InterviewPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white border-b border-gray-200">
-                {/* ... Header-Inhalt (unverändert) ... */}
-                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                     <div className="flex items-center justify-between">
-                         <div className="flex items-center space-x-5">
-                             <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center">
-                                 <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" width={48} height={48} />
-                             </div>
-                             <div>
-                                 <h1 className="text-2xl font-bold text-gray-900">KI-gestütztes Interview</h1>
-                                 <div className="flex items-center space-x-2 mt-1">
-                                     <p className="text-gray-600">Readiness Assessment</p>
-                                     <Badge
-                                         variant="outline"
-                                         className={`px-2 py-0.5 text-xs ${isConnected ? "border-green-500 text-green-600 bg-green-50" : "border-gray-300 text-gray-600 bg-gray-50"}`}
-                                     >
-                                         {isConnected ? "● Live" : "○ Offline"}
-                                     </Badge>
-                                 </div>
-                             </div>
-                         </div>
-                         <div className="flex items-center space-x-4">
-                             {isConnected && (
-                                 <Badge variant="destructive" className="font-medium tabular-nums py-1 px-3 text-base">
-                                     <Timer className="w-4 h-4 mr-2" />
-                                     {formatTime(timeLeft)}
-                                 </Badge>
-                             )}
-                             <Badge variant="outline" className="border-brand text-brand bg-brand/10 font-medium">
-                                 Schritt 1 von 5
-                             </Badge>
-                         </div>
-                     </div>
-                 </div>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-5">
+                            <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center">
+                                <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" width={48} height={48} />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">KI-gestütztes Interview</h1>
+                                <div className="flex items-center space-x-2 mt-1">
+                                    <p className="text-gray-600">Readiness Assessment</p>
+                                    <Badge
+                                        variant="outline"
+                                        className={`px-2 py-0.5 text-xs ${isConnected ? "border-green-500 text-green-600 bg-green-50" : "border-gray-300 text-gray-600 bg-gray-50"}`}
+                                    >
+                                        {isConnected ? "● Live" : "○ Offline"}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            {isConnected && (
+                                <Badge variant="destructive" className="font-medium tabular-nums py-1 px-3 text-base">
+                                    <Timer className="w-4 h-4 mr-2" />
+                                    {formatTime(timeLeft)}
+                                </Badge>
+                            )}
+                            <Badge variant="outline" className="border-brand text-brand bg-brand/10 font-medium">
+                                Schritt 1 von 5
+                            </Badge>
+                        </div>
+                    </div>
+                </div>
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="space-y-8">
                     <div className="text-center">
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                           {/* GEÄNDERT: Titel passt sich an, wenn das Interview beendet wurde */}
-                           {interviewEnded ? "Interview beendet" : isConnected ? "Interview läuft" : "Bereit für dein Interview"}
+                            {interviewEnded ? "Interview beendet" : isConnected ? "Interview läuft" : "Bereit für dein Interview"}
                         </h2>
                         <p className="text-gray-600 max-w-2xl mx-auto">
-                            {/* GEÄNDERT: Text passt sich an, wenn das Interview beendet wurde */}
                             {interviewEnded
                                 ? "Vielen Dank für deine Teilnahme. Deine Antworten werden nun verarbeitet."
                                 : isConnected
-                                    ? "Du bist jetzt mit unserem KI-Interviewer verbunden. Sprich natürlich und beantworte die Fragen."
+                                    ? "Du bist jetzt mit unserem KI-Interviewer verbunden. Die Kamera ist optional."
                                     : "Klicke auf 'Interview starten', wenn du bereit für das Gespräch mit unserem KI-Interviewer bist."}
                         </p>
                     </div>
 
                     <div className="max-w-5xl mx-auto">
                         <div className="grid md:grid-cols-2 gap-8">
-                            {/* Dein Video */}
                             <Card className="overflow-hidden border-2 border-gray-200 shadow-lg">
-                                 <CardContent className="p-0 relative">
-                                     <div className="aspect-video bg-gray-100">
-                                         {hasPermissions && !isCameraOff ? (
-                                             <video ref={videoRef} autoPlay muted className="w-full h-full object-cover" />
-                                         ) : (
-                                             <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                                 <div className="text-center text-gray-500">
-                                                     <User className="w-10 h-10 mx-auto mb-2" />
-                                                     <p className="font-medium">
-                                                         {!hasPermissions ? "Kamerazugriff erforderlich" : "Kamera aus"}
-                                                     </p>
-                                                 </div>
-                                             </div>
-                                         )}
-                                     </div>
-                                     <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full">
-                                         <span className="text-white text-sm font-medium">Du</span>
-                                     </div>
-                                     {isMuted && (
-                                         <div className="absolute top-4 right-4 bg-red-500 p-2 rounded-full shadow-lg">
-                                             <MicOff className="w-4 h-4 text-white" />
-                                         </div>
-                                     )}
-                                 </CardContent>
-                             </Card>
+                                <CardContent className="p-0 relative">
+                                    <div className="aspect-video bg-gray-100">
+                                        {!isCameraOff && videoStream ? (
+                                            <video ref={videoRef} autoPlay muted className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                                <div className="text-center text-gray-500">
+                                                    <User className="w-10 h-10 mx-auto mb-2" />
+                                                    <p className="font-medium">
+                                                        Kamera aus
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full">
+                                        <span className="text-white text-sm font-medium">Du</span>
+                                    </div>
+                                    {isMuted && (
+                                        <div className="absolute top-4 right-4 bg-red-500 p-2 rounded-full shadow-lg">
+                                            <MicOff className="w-4 h-4 text-white" />
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                            {/* KI-Agent */}
                             <Card className={`overflow-hidden border-2 border-brand shadow-lg transition-transform duration-300 ease-in-out ${conversation.isSpeaking ? 'scale-[1.02]' : 'scale-100'}`}>
-                                 <CardContent className="p-0 relative">
-                                     <div className="aspect-video relative">
-                                         <Image
-                                             src="/roman_profile.jpeg"
-                                             alt="Profilbild des KI-Interviewers Roman"
-                                             fill
-                                             className="object-cover"
-                                         />
-                                     </div>
-                                     <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full">
-                                         <span className="text-white text-sm font-medium">KI Agent</span>
-                                     </div>
-                                     {conversation.isSpeaking && (
-                                         <div className="absolute top-4 right-4 bg-white/30 p-2 rounded-full shadow-lg animate-pulse">
-                                             <Volume2 className="w-5 h-5 text-white" />
-                                         </div>
-                                     )}
-                                 </CardContent>
-                             </Card>
+                                <CardContent className="p-0 relative">
+                                    <div className="aspect-video relative">
+                                        <Image
+                                            src="/roman_profile.jpeg"
+                                            alt="Profilbild des KI-Interviewers Roman"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full">
+                                        <span className="text-white text-sm font-medium">KI Agent</span>
+                                    </div>
+                                    {conversation.isSpeaking && (
+                                        <div className="absolute top-4 right-4 bg-white/30 p-2 rounded-full shadow-lg animate-pulse">
+                                            <Volume2 className="w-5 h-5 text-white" />
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
 
-                    {/* Button-Container mit Zusatztext */}
-                    {/* GEÄNDERT: Kompletter Button-Block wurde durch eine neue Logik ersetzt */}
                     <div className="flex flex-col items-center justify-center py-6">
                         {interviewEnded ? (
                             <>
@@ -337,20 +337,36 @@ export default function InterviewPage() {
                                 {connecting ? "Verbinde..." : "Interview starten"}
                             </Button>
                         ) : (
-                            <>
-                                <Button
-                                    onClick={endInterview}
-                                    className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
-                                >
-                                    <PhoneOff className="w-5 h-5 mr-3" />
-                                    Interview beenden
-                                </Button>
-                                <p className="text-gray-500 text-sm mt-4 text-center">
-                                    Wenn Sie fertig sind, drücken Sie auf &apos;Interview beenden&apos;.<br />
-                                    Die Weiterleitung kann einen Moment dauern, während Ihr Gespräch analysiert wird.
+                            <div className="flex flex-col items-center space-y-4 w-full">
+                                <div className="flex items-center space-x-4">
+                                    <Button
+                                        onClick={toggleCamera}
+                                        variant="outline"
+                                        className="bg-white/80 backdrop-blur-sm px-6 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+                                    >
+                                        {isCameraOff ? <VideoOff className="w-5 h-5 mr-3" /> : <Video className="w-5 h-5 mr-3" />}
+                                        {isCameraOff ? "Kamera an" : "Kamera aus"}
+                                    </Button>
+
+                                    <Button
+                                        onClick={endInterview}
+                                        className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+                                    >
+                                        <PhoneOff className="w-5 h-5 mr-3" />
+                                        Interview beenden
+                                    </Button>
+                                </div>
+                                <p className="text-gray-500 text-sm text-center">
+                                    Wenn du fertig bist, drücke auf &apos;Interview beenden&apos;.<br />
+                                    Die Weiterleitung kann einen Moment dauern, während dein Gespräch analysiert wird.
                                 </p>
-                            </>
+                            </div>
                         )}
+
+                        <div className="flex items-center text-gray-500 text-sm mt-8">
+                            <ShieldCheck className="w-4 h-4 mr-2 text-green-600" />
+                            Dein Video wird nicht aufgezeichnet oder gespeichert.
+                        </div>
                     </div>
 
                     {(permissionError || connectionError) && (
