@@ -7,7 +7,8 @@ import { useConversation } from "@elevenlabs/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MicOff, Phone, PhoneOff, Volume2, User, Timer } from "lucide-react"
+// NEU: Zusätzliche Icons importiert
+import { MicOff, Phone, PhoneOff, Volume2, User, Timer, Video, VideoOff, ShieldCheck } from "lucide-react"
 
 export default function InterviewPage() {
     const router = useRouter()
@@ -16,17 +17,21 @@ export default function InterviewPage() {
 
     const [isConnected, setIsConnected] = useState(false)
     const [isMuted] = useState(false)
-    const [isCameraOff] = useState(false)
+    // GEÄNDERT: isCameraOff wird nun ein steuerbarer Status, standardmäßig aus
+    const [isCameraOff, setIsCameraOff] = useState(true)
     const [hasPermissions, setHasPermissions] = useState(false)
     const [permissionError, setPermissionError] = useState<string | null>(null)
     const [connecting, setConnecting] = useState(false)
     const [connectionError, setConnectionError] = useState<string | null>(null)
     const videoRef = useRef<HTMLVideoElement>(null)
-    const streamRef = useRef<MediaStream | null>(null)
+    const streamRef = useRef<MediaStream | null>(null) // Hält primär den Audio-Stream
     const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
-    const [interviewEnded, setInterviewEnded] = useState(false); // NEU: Status, um das Ende des Interviews zu speichern
+    const [interviewEnded, setInterviewEnded] = useState(false);
 
-    const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 Minuten in Sekunden
+    // NEU: Separater Status für den Video-Stream
+    const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+
+    const [timeLeft, setTimeLeft] = useState(20 * 60);
     const [isTimerActive, setIsTimerActive] = useState(false);
 
     const appendToTranscript = useCallback((role: "user" | "ai", text: string) => {
@@ -61,39 +66,42 @@ export default function InterviewPage() {
         },
     })
 
+    // GEÄNDERT: Frägt initial nur nach dem Mikrofon
     useEffect(() => {
         let didCancel = false
-        async function setupCamera() {
+        async function setupMicrophone() {
             setPermissionError(null)
             try {
                 if (!navigator.mediaDevices?.getUserMedia) {
-                    setPermissionError("Kamera/Mikrofon wird nicht unterstützt.")
+                    setPermissionError("Mikrofon wird nicht unterstützt.")
                     return
                 }
-                const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                // Nur Audio anfordern, um die Hürde zu senken
+                const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
                 if (didCancel) return
                 streamRef.current = mediaStream
                 setHasPermissions(true)
             } catch {
-                setPermissionError("Kamera-/Mikrofonberechtigungen erforderlich.")
+                setPermissionError("Mikrofonberechtigung erforderlich.")
                 setHasPermissions(false)
             }
         }
-        setupCamera()
+        setupMicrophone()
 
         return () => {
             didCancel = true
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => track.stop())
-            }
+            // Alle Streams beim Verlassen der Seite stoppen
+            streamRef.current?.getTracks().forEach((track) => track.stop())
+            videoStream?.getTracks().forEach((track) => track.stop())
         }
-    }, [])
+    }, [videoStream]) // videoStream hinzugefügt, um Cleanup zu gewährleisten
 
+    // GEÄNDERT: Dieser Effekt steuert nun den Video-Stream
     useEffect(() => {
-        if (hasPermissions && !isCameraOff && videoRef.current && streamRef.current) {
-            videoRef.current.srcObject = streamRef.current;
+        if (videoRef.current && videoStream) {
+            videoRef.current.srcObject = videoStream;
         }
-    }, [hasPermissions, isCameraOff, videoRef, streamRef]);
+    }, [videoStream]);
 
     useEffect(() => {
         const handleBeforeUnload = () => {
@@ -112,7 +120,7 @@ export default function InterviewPage() {
     const startInterview = async () => {
         setConnectionError(null)
         if (!hasPermissions) {
-            setPermissionError("Berechtigungen sind erforderlich.")
+            setPermissionError("Mikrofon-Berechtigung ist erforderlich.")
             return
         }
         setConnecting(true)
@@ -131,13 +139,18 @@ export default function InterviewPage() {
         }
     }
     
-    // GEÄNDERT: endInterview ist nun von `interviewEnded` abhängig, um mehrfache Ausführung zu verhindern
+    // GEÄNDERT: endInterview mit Kamera-Cleanup erweitert
     const endInterview = useCallback(async () => {
-        if (interviewEnded) return; // Verhindert, dass die Funktion mehrfach ausgeführt wird
+        if (interviewEnded) return;
 
-        setInterviewEnded(true); // NEU: Status auf "beendet" setzen
+        setInterviewEnded(true);
         setIsTimerActive(false);
         await conversation.endSession();
+
+        // Kamera ausschalten, wenn das Interview beendet wird
+        videoStream?.getTracks().forEach(track => track.stop());
+        setVideoStream(null);
+        setIsCameraOff(true);
 
         const params = new URLSearchParams(searchParams);
 
@@ -163,7 +176,7 @@ export default function InterviewPage() {
         .catch(err => console.error("Error calling analyze-transcript:", err));
 
         router.push(`/completion_impact?${params.toString()}`);
-    }, [applicationId, conversation, router, searchParams, transcript, interviewEnded]); // NEU: interviewEnded als Abhängigkeit hinzugefügt
+    }, [applicationId, conversation, router, searchParams, transcript, interviewEnded, videoStream]);
 
     useEffect(() => {
         if (!isTimerActive || !isConnected) return;
@@ -179,6 +192,24 @@ export default function InterviewPage() {
 
         return () => clearInterval(intervalId);
     }, [isTimerActive, isConnected, timeLeft, endInterview]);
+
+    // NEU: Funktion zum An- und Ausschalten der Kamera
+    const toggleCamera = async () => {
+        if (isCameraOff) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setVideoStream(stream);
+                setIsCameraOff(false);
+            } catch (err) {
+                console.error("Kamerazugriff verweigert:", err);
+                setPermissionError("Kamerazugriff wurde verweigert.");
+            }
+        } else {
+            videoStream?.getTracks().forEach(track => track.stop());
+            setVideoStream(null);
+            setIsCameraOff(true);
+        }
+    };
 
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
@@ -227,33 +258,31 @@ export default function InterviewPage() {
                 <div className="space-y-8">
                     <div className="text-center">
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                             {/* GEÄNDERT: Titel passt sich an, wenn das Interview beendet wurde */}
                             {interviewEnded ? "Interview beendet" : isConnected ? "Interview läuft" : "Bereit für dein Interview"}
                         </h2>
                         <p className="text-gray-600 max-w-2xl mx-auto">
-                            {/* GEÄNDERT: Text passt sich an, wenn das Interview beendet wurde */}
                             {interviewEnded
                                 ? "Vielen Dank für deine Teilnahme. Deine Antworten werden nun verarbeitet."
                                 : isConnected
-                                    ? "Du bist jetzt mit unserem KI-Interviewer verbunden. Sprich natürlich und beantworte die Fragen."
+                                    ? "Du bist jetzt mit unserem KI-Interviewer verbunden. Die Kamera ist optional."
                                     : "Klicke auf 'Interview starten', wenn du bereit für das Gespräch mit unserem KI-Interviewer bist."}
                         </p>
                     </div>
 
                     <div className="max-w-5xl mx-auto">
                         <div className="grid md:grid-cols-2 gap-8">
-                            {/* Dein Video */}
                             <Card className="overflow-hidden border-2 border-gray-200 shadow-lg">
                                 <CardContent className="p-0 relative">
                                     <div className="aspect-video bg-gray-100">
-                                        {hasPermissions && !isCameraOff ? (
+                                        {/* GEÄNDERT: Logik prüft nun auf !isCameraOff und videoStream */}
+                                        {!isCameraOff && videoStream ? (
                                             <video ref={videoRef} autoPlay muted className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gray-100">
                                                 <div className="text-center text-gray-500">
                                                     <User className="w-10 h-10 mx-auto mb-2" />
                                                     <p className="font-medium">
-                                                        {!hasPermissions ? "Kamerazugriff erforderlich" : "Kamera aus"}
+                                                        Kamera aus
                                                     </p>
                                                 </div>
                                             </div>
@@ -270,7 +299,6 @@ export default function InterviewPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* KI-Agent */}
                             <Card className={`overflow-hidden border-2 border-brand shadow-lg transition-transform duration-300 ease-in-out ${conversation.isSpeaking ? 'scale-[1.02]' : 'scale-100'}`}>
                                 <CardContent className="p-0 relative">
                                     <div className="aspect-video relative">
@@ -294,7 +322,6 @@ export default function InterviewPage() {
                         </div>
                     </div>
 
-                    {/* GEÄNDERT: Kompletter Button-Block wurde durch eine neue Logik ersetzt */}
                     <div className="flex flex-col items-center justify-center py-6">
                         {interviewEnded ? (
                             <>
@@ -318,20 +345,38 @@ export default function InterviewPage() {
                                 {connecting ? "Verbinde..." : "Interview starten"}
                             </Button>
                         ) : (
-                            <>
-                                <Button
-                                    onClick={endInterview}
-                                    className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
-                                >
-                                    <PhoneOff className="w-5 h-5 mr-3" />
-                                    Interview beenden
-                                </Button>
-                                <p className="text-gray-500 text-sm mt-4 text-center">
+                            // NEU: Container für mehrere Kontroll-Buttons
+                            <div className="flex flex-col items-center space-y-4 w-full">
+                                <div className="flex items-center space-x-4">
+                                    <Button
+                                        onClick={toggleCamera}
+                                        variant="outline"
+                                        className="bg-white/80 backdrop-blur-sm px-6 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+                                    >
+                                        {isCameraOff ? <VideoOff className="w-5 h-5 mr-3" /> : <Video className="w-5 h-5 mr-3" />}
+                                        {isCameraOff ? "Kamera an" : "Kamera aus"}
+                                    </Button>
+
+                                    <Button
+                                        onClick={endInterview}
+                                        className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg transition-all duration-200 transform hover:scale-105"
+                                    >
+                                        <PhoneOff className="w-5 h-5 mr-3" />
+                                        Interview beenden
+                                    </Button>
+                                </div>
+                                <p className="text-gray-500 text-sm text-center">
                                     Wenn Sie fertig sind, drücken Sie auf &apos;Interview beenden&apos;.<br />
                                     Die Weiterleitung kann einen Moment dauern, während Ihr Gespräch analysiert wird.
                                 </p>
-                            </>
+                            </div>
                         )}
+
+                        {/* NEU: Disclaimer zur Videoaufzeichnung */}
+                        <div className="flex items-center text-gray-500 text-sm mt-8">
+                            <ShieldCheck className="w-4 h-4 mr-2 text-green-600" />
+                            Dein Video wird nicht aufgezeichnet oder gespeichert.
+                        </div>
                     </div>
 
                     {(permissionError || connectionError) && (
