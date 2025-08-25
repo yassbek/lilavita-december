@@ -13,6 +13,9 @@ interface TypeformAnswer {
   number?: number;
   boolean?: boolean;
   choice?: { label: string; };
+  email?: string;
+  phone_number?: string;
+  url?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -74,6 +77,9 @@ export async function POST(request: NextRequest) {
     const directusData = {
       startup: findAnswerByRef('8e3e55d3-eead-4b45-a8a7-f0796c29eda1')?.text,
       name: findAnswerByRef('fa14b4e2-a817-485d-b5ae-f65753468cb9')?.text,
+      email: findAnswerByRef('cf8dfd53-a956-472a-8f73-c6d7271216e7')?.email,
+      telefonnummer: findAnswerByRef('19473af9-2aee-44dc-9dfe-ff3d81efb769')?.phone_number,
+      website: findAnswerByRef('2e301ae8-0db2-42f8-9f90-9592082eabd7')?.url,
       date_gegruendet: findAnswerByRef('22b01df8-6fb1-4096-b4d2-4d9573cc6be5')?.date,
       anzahl_mitarbeiter: findAnswerByRef('9546b93b-0512-4595-8705-90ecd2060491')?.number,
       weiblich: findAnswerByRef('70bef2a9-5446-409a-a5ab-c9472e40c236')?.number,

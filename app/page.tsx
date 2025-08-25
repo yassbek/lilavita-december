@@ -185,6 +185,11 @@ function AppView() {
           name: newApplicationData.name || '',
           startup: newApplicationData.startup || '',
           branche: newApplicationData.branche || '',
+          // --- HIER DIE NEUEN FELDER ERGÄNZEN ---
+          email: newApplicationData.email || '',
+          telefonnummer: newApplicationData.telefonnummer || '',
+          website: newApplicationData.website || '',
+          // -----------------------------------------
           applicationId: finalApplicationId, // Verwende die finale ID
         }).toString();
         
