@@ -74,76 +74,89 @@ export default function StartPage() {
     }
   };
 
-  const handleUploadAndContinue = async () => {
-    if (!selectedFile) {
-      alert("Bitte wähle zuerst dein Pitchdeck aus.");
+  // ### EINZIGE ÄNDERUNG IN DER LOGIK IST HIER ###
+  // Ersetze nur den problematischen Teil in deiner handleUploadAndContinue Funktion:
+
+const handleUploadAndContinue = async () => {
+  if (!selectedFile) {
+    alert("Bitte wähle zuerst dein Pitchdeck aus.");
+    return;
+  }
+  
+  setIsLoading(true);
+
+  try {
+    // -- SCHRITT 1: DATEI-UPLOAD --
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    console.log("Starte Upload...");
+    const fileUploadResult = await directus.request(uploadFiles(formData));
+    const fileId = fileUploadResult.id;
+    console.log('Datei erfolgreich hochgeladen. File ID:', fileId);
+
+    const applicantId = searchParams.get("applicationId");
+    if (!applicantId) {
+      throw new Error("Application-ID nicht in der URL gefunden! Der Upload kann nicht zugeordnet werden.");
+    }
+
+    // ENTFERNT: Das Application-Update wird jetzt in der API gemacht
+    console.log(`Datei ${fileId} bereit für Application ${applicantId}`);
+    
+    // -- SCHRITT 1.5: ZUSAMMENFASSUNG ERSTELLEN LASSEN --
+    console.log("Starte die KI-gestützte Zusammenfassung...");
+    const summarizeResponse = await fetch('/api/summarize', { // Geändert von '/api/s' zu '/api/summarize'
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fileId, applicationId: applicantId }),
+    });
+
+    if (!summarizeResponse.ok) {
+      const errorData = await summarizeResponse.json();
+      console.warn("Die automatische Zusammenfassung ist fehlgeschlagen:", errorData.message);
+    } else {
+      console.log("Zusammenfassung erfolgreich erstellt.");
+    }
+
+    // -- SCHRITT 2: SPEED-TEST --
+    console.log("Starte Geschwindigkeitstest...");
+    const fileUrl = '/speedtestfile.dat';
+    const fileSizeInBytes = 5 * 1024 * 1024; // 5 MB
+
+    const startTime = new Date().getTime();
+    const response = await fetch(fileUrl + '?t=' + startTime);
+
+    if (!response.ok) {
+      throw new Error(`Testdatei nicht gefunden (Status: ${response.status}).`);
+    }
+
+    await response.blob();
+    const endTime = new Date().getTime();
+    const durationInSeconds = (endTime - startTime) / 1000;
+
+    if (durationInSeconds < 0.1) {
+      navigateToNextPage();
       return;
     }
-    
-    setIsLoading(true);
 
-    try {
-      // -- SCHRITT 1: DATEI-UPLOAD --
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+    const bitsLoaded = fileSizeInBytes * 8;
+    const speedMbps = (bitsLoaded / durationInSeconds) / 1024 / 1024;
+    console.log(`Geschwindigkeit: ${speedMbps.toFixed(2)} Mbit/s`);
 
-      console.log("Starte Upload...");
-      
-      // KORREKTUR: Verwende die korrekte uploadFiles Funktion
-      const fileUploadResult = await directus.request(uploadFiles(formData));
-      const fileId = fileUploadResult.id;
-      console.log('Datei erfolgreich hochgeladen. File ID:', fileId);
-
-      // Die ID der Application aus den URL-Parametern holen.
-      const applicantId = searchParams.get("applicationId");
-      if (!applicantId) {
-        throw new Error("Application-ID nicht in der URL gefunden! Der Upload kann nicht zugeordnet werden.");
-      }
-
-      // Den Application-Eintrag in Directus aktualisieren und die fileId zuweisen
-      // KORREKTUR: Verwende die korrekte updateItem Funktion
-      await directus.request(updateItem('applications', applicantId, {
-        pitchdeck: fileId
-      }));
-      console.log(`Application ${applicantId} wurde mit Pitchdeck ${fileId} aktualisiert.`);
-
-      // -- SCHRITT 2: SPEED-TEST --
-      console.log("Starte Geschwindigkeitstest...");
-      const fileUrl = '/speedtestfile.dat';
-      const fileSizeInBytes = 5 * 1024 * 1024; // 5 MB
-
-      const startTime = new Date().getTime();
-      const response = await fetch(fileUrl + '?t=' + startTime);
-
-      if (!response.ok) {
-        throw new Error(`Testdatei nicht gefunden (Status: ${response.status}).`);
-      }
-
-      await response.blob();
-      const endTime = new Date().getTime();
-      const durationInSeconds = (endTime - startTime) / 1000;
-
-      if (durationInSeconds < 0.1) {
-        navigateToNextPage();
-        return;
-      }
-
-      const bitsLoaded = fileSizeInBytes * 8;
-      const speedMbps = (bitsLoaded / durationInSeconds) / 1024 / 1024;
-      console.log(`Geschwindigkeit: ${speedMbps.toFixed(2)} Mbit/s`);
-
-      if (speedMbps < 20) {
-        setShowLowSpeedAlert(true);
-      } else {
-        navigateToNextPage();
-      }
-    } catch (error) {
-      console.error("Ein Fehler ist aufgetreten:", error);
-      alert("Ein Fehler ist aufgetreten. Bitte überprüfe die Konsole für Details und versuche es erneut.");
-    } finally {
-      setIsLoading(false);
+    if (speedMbps < 20) {
+      setShowLowSpeedAlert(true);
+    } else {
+      navigateToNextPage();
     }
+  } catch (error) {
+    console.error("Ein Fehler ist aufgetreten:", error);
+    alert("Ein Fehler ist aufgetreten. Bitte überprüfe die Konsole für Details und versuche es erneut.");
+  } finally {
+    setIsLoading(false);
   }
+}
 
   const steps = [
      { id: 1, title: "Online-Formular", description: "Grundlegende Informationen und Firmendetails.", status: "completed", icon: CheckCircle },
@@ -214,7 +227,7 @@ export default function StartPage() {
             <CardHeader>
                 <CardTitle>Schritt 1: Pitchdeck hochladen</CardTitle>
                 <CardDescription>
-                    Bitte lade dein aktuelles Pitchdeck hoch. Erlaubte Formate sind PDF, PPTX, Keynote. (max. 20 MB)
+                    Bitte lade dein aktuelles Pitchdeck hoch. Erlaubte Formate sind PDF. (max. 20 MB)
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -224,7 +237,7 @@ export default function StartPage() {
                         ref={fileInputRef}
                         onChange={handleFileChange}
                         className="hidden"
-                        accept=".pdf,.pptx,.key"
+                        accept=".pdf"
                     />
                     
                     {!selectedFile ? (
@@ -251,20 +264,20 @@ export default function StartPage() {
 
         {/* Cookie- und Fortschrittshinweis */}
         <Card className="mb-8 bg-sky-50 border-sky-200">
-             <CardHeader className="flex flex-row items-center space-x-3">
-                 <Info className="w-6 h-6 text-sky-700" />
-                 <div>
-                     <CardTitle className="text-sky-900">Wichtiger Hinweis zur Speicherung deines Fortschritts</CardTitle>
-                 </div>
-             </CardHeader>
-             <CardContent>
-                 <p className="text-sky-800">
-                     Wir verwenden notwendige Cookies, um deinen Fortschritt im Bewerbungsprozess zu speichern. Dies ermöglicht es dir, die Bewerbung jederzeit zu unterbrechen und innerhalb von <strong>7 Tagen</strong> an derselben Stelle fortzusetzen. Nach Ablauf dieser Frist werden deine Daten aus Sicherheitsgründen zurückgesetzt.
-                 </p>
-                 <p className="text-sm text-sky-700 mt-2">
-                     Mit dem Fortfahren stimmst du dieser Nutzung zu.
-                 </p>
-             </CardContent>
+           <CardHeader className="flex flex-row items-center space-x-3">
+               <Info className="w-6 h-6 text-sky-700" />
+               <div>
+                   <CardTitle className="text-sky-900">Wichtiger Hinweis zur Speicherung deines Fortschritts</CardTitle>
+               </div>
+           </CardHeader>
+           <CardContent>
+               <p className="text-sky-800">
+                   Wir verwenden notwendige Cookies, um deinen Fortschritt im Bewerbungsprozess zu speichern. Dies ermöglicht es dir, die Bewerbung jederzeit zu unterbrechen und innerhalb von <strong>7 Tagen</strong> an derselben Stelle fortzusetzen. Nach Ablauf dieser Frist werden deine Daten aus Sicherheitsgründen zurückgesetzt.
+               </p>
+               <p className="text-sm text-sky-700 mt-2">
+                   Mit dem Fortfahren stimmst du dieser Nutzung zu.
+               </p>
+           </CardContent>
         </Card>
 
         <div className="grid lg:grid-cols-3 gap-8 mb-8">
@@ -340,7 +353,7 @@ export default function StartPage() {
                         <span className="text-orange-900">Hinweis zur Verbindungsprüfung</span>
                     </CardTitle>
                     <CardDescription className="text-orange-800">
-                      Für eine stabile Interview-Erfahrung.
+                        Für eine stabile Interview-Erfahrung.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -366,15 +379,16 @@ export default function StartPage() {
             size="lg"
           >
             {isLoading ? (
-                <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Lädt hoch & prüft Verbindung...
-                </>
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {/* ### EINZIGE ÄNDERUNG IM LAYOUT IST HIER ### */}
+                Lädt hoch & analysiert Pitchdeck...
+              </>
             ) : (
-                <>
-                    Weiter zum ersten Interview
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                </>
+              <>
+                Weiter zum ersten Interview
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
             )}
           </Button>
           <Button variant="outline" onClick={() => window.open("mailto:support@impactfactory.de", "_blank")} size="lg">
