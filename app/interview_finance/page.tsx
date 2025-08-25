@@ -24,6 +24,7 @@ export default function InterviewPage() {
     const videoRef = useRef<HTMLVideoElement>(null)
     const streamRef = useRef<MediaStream | null>(null)
     const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([])
+    const [interviewEnded, setInterviewEnded] = useState(false); // NEU: Status, um das Ende des Interviews zu speichern
 
     const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 Minuten in Sekunden
     const [isTimerActive, setIsTimerActive] = useState(false);
@@ -131,7 +132,11 @@ export default function InterviewPage() {
         }
     }
 
+    // GEÄNDERT: endInterview ist nun von `interviewEnded` abhängig, um mehrfache Ausführung zu verhindern
     const endInterview = useCallback(async () => {
+        if (interviewEnded) return; // Verhindert, dass die Funktion mehrfach ausgeführt wird
+
+        setInterviewEnded(true); // NEU: Status auf "beendet" setzen
         setIsTimerActive(false); // Timer anhalten
         await conversation.endSession();
 
@@ -159,7 +164,7 @@ export default function InterviewPage() {
         .catch(err => console.error("Error calling analyze-transcript:", err));
 
         router.push(`/completion_finance?${params.toString()}`);
-    }, [applicationId, conversation, router, searchParams, transcript]);
+    }, [applicationId, conversation, router, searchParams, transcript, interviewEnded]); // NEU: interviewEnded als Abhängigkeit hinzugefügt
 
     useEffect(() => {
         if (!isTimerActive || !isConnected) return;
@@ -223,12 +228,16 @@ export default function InterviewPage() {
                 <div className="space-y-8">
                     <div className="text-center">
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                            {isConnected ? "Interview läuft" : "Bereit für dein Interview"}
+                             {/* GEÄNDERT: Titel passt sich an, wenn das Interview beendet wurde */}
+                            {interviewEnded ? "Interview beendet" : isConnected ? "Interview läuft" : "Bereit für dein Interview"}
                         </h2>
                         <p className="text-gray-600 max-w-2xl mx-auto">
-                            {isConnected
-                                ? "Du bist jetzt mit unserem KI-Interviewer verbunden. Sprich natürlich und beantworte die Fragen."
-                                : "Klicke auf 'Interview starten', wenn du bereit für das Gespräch mit unserem KI-Interviewer bist."}
+                            {/* GEÄNDERT: Text passt sich an, wenn das Interview beendet wurde */}
+                            {interviewEnded
+                                ? "Vielen Dank für deine Teilnahme. Deine Antworten werden nun verarbeitet."
+                                : isConnected
+                                    ? "Du bist jetzt mit unserem KI-Interviewer verbunden. Sprich natürlich und beantworte die Fragen."
+                                    : "Klicke auf 'Interview starten', wenn du bereit für das Gespräch mit unserem KI-Interviewer bist."}
                         </p>
                     </div>
 
@@ -262,7 +271,7 @@ export default function InterviewPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* KI-Agent - START DER ÄNDERUNG */}
+                            {/* KI-Agent */}
                             <Card className={`
                                 overflow-hidden border-2 shadow-lg transition-all duration-300 ease-in-out
                                 ${conversation.isSpeaking 
@@ -290,12 +299,24 @@ export default function InterviewPage() {
                                     )}
                                 </CardContent>
                             </Card>
-                            {/* KI-Agent - ENDE DER ÄNDERUNG */}
                         </div>
                     </div>
 
+                    {/* GEÄNDERT: Kompletter Button-Block wurde durch eine neue Logik ersetzt */}
                     <div className="flex flex-col items-center justify-center py-6">
-                        {!isConnected ? (
+                        {interviewEnded ? (
+                            <>
+                                <Button
+                                    disabled
+                                    className="bg-gray-400 text-white font-bold px-8 py-4 text-lg rounded-full shadow-lg cursor-not-allowed"
+                                >
+                                    Interview beendet
+                                </Button>
+                                <p className="text-gray-500 text-sm mt-4 text-center">
+                                    Du wirst in Kürze weitergeleitet...
+                                </p>
+                            </>
+                        ) : !isConnected ? (
                             <Button
                                 onClick={startInterview}
                                 disabled={!hasPermissions || connecting}
