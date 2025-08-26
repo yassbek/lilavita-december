@@ -15,6 +15,7 @@ export default function PreparationPage() {
     const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
     const [isReady, setIsReady] = useState(false)
 
+    // Aangepasst an deinen Text
     const readinessAreas = [
         {
             icon: Megaphone,
@@ -22,8 +23,8 @@ export default function PreparationPage() {
             description: "Die Basis eures Impact-Marketings: Euer 'Warum', eure Zielgruppe und eure einzigartige Geschichte.",
             topics: [
                 "Kommunikation eurer Mission nach dem Golden Circle (Warum, Wie, Was)",
-                "Definition eures Wertversprechens mit dem Value Proposition Canvas",
-                "Markt-Segmentierung, Targeting und Positionierung (STP-Modell)",
+                "Definition eures Wertversprechens und Eurem USP",
+                "Zielgruppen & Positionierung",
                 "Nutzung von Storytelling zur Schaffung einer emotionalen Markenbindung",
             ],
         },
@@ -33,7 +34,6 @@ export default function PreparationPage() {
             description: "Wie ihr datengetrieben experimentiert, um eure Zielgruppen effektiv zu erreichen und zu binden.",
             topics: [
                 "Anwendung von Growth Hacking-Zyklen für schnelles, budgetschonendes Wachstum",
-                "Analyse des Nutzer-Funnels mit Pirate Metrics (AARRR) zur Identifikation von Schwachstellen",
                 "Aufbau von Kommunikations-Funnels nach dem AIDA-Prinzip (Attention, Interest, Desire, Action)",
                 "Steuerung des Marketing-Budgets über Unit Economics (CAC vs. CLV)",
             ],
@@ -44,21 +44,19 @@ export default function PreparationPage() {
             description: "Der ganzheitliche Blick auf eure Marketing-Aktivitäten und strategische Chancen.",
             topics: [
                 "Ganzheitliche Planung aller 7 Ps des Marketing-Mix (von Product bis Physical Evidence)",
-                "Analyse des Wettbewerbs und Entwicklung einer Blue Ocean Strategy zur Schaffung neuer Märkte",
-                "Standortbestimmung durch Diagnose-Tools (z.B. SWOT, Business Model Canvas, B Impact Assessment)",
                 "Ableitung von strategischen Handlungsfeldern aus den Analyse-Ergebnissen",
             ],
         },
     ]
 
+    // Aangepasst an deinen Text
     const preparationChecklist = [
         "Ich kann unser 'Warum' klar formulieren und weiß, wie wir unsere Story erzählen.",
-        "Ich habe eine klare Vorstellung unserer Zielsegmente und unserer Positionierung darin (STP).",
-        "Ich bin bereit, über unsere Experimente zur Wachstumssteigerung (Growth Hacking) zu sprechen.",
-        "Ich kenne die wichtigsten Stufen unseres Nutzer-Funnels (AARRR) und deren Kennzahlen.",
-        "Ich kann erläutern, wie die 7 Ps in unserer Marketingstrategie zusammenspielen.",
-        "Ich habe darüber nachgedacht, wo wir uns vom Wettbewerb abheben und neue Chancen (Blue Ocean) schaffen können.",
-        "Ich habe eine Einschätzung, wo die Stärken und Schwächen unseres aktuellen Marketings liegen (z.B. via SWOT).",
+        "Ich habe eine klare Vorstellung unserer Zielgruppe und unserer Positionierung (USP).",
+        "Ich bin bereit, über unsere Experimente zur Wachstumssteigerung unter begrenzten Ressourcen (Growth Hacking) zu sprechen.",
+        "Ich kenne die wichtigsten Marketingkanäle und Quellen für neue Sales-Leads.",
+        "Ich kann erläutern, wie die 7 Ps («Product», «Price», «Place», «Promotion», «People», «Process» und «Physical Evidence») in unserer Marketingstrategie zusammenspielen.",
+        "Ich habe eine Einschätzung, wo die Stärken und Schwächen unseres aktuellen Marketings liegen (z.B. via SWOT-Analyse).",
     ]
 
     const introText = "In diesem Gespräch wollen wir verstehen, wie ihr eure Mission durch Marketing sichtbar macht und Wachstum erzielt. Das KI-gestützte Interview hilft uns, eure Marketingreife anhand bewährter Frameworks einzuschätzen und euren Unterstützungsbedarf zu identifizieren."
