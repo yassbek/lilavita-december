@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ConvAI from "@/components/ConvAI";
 import { BackgroundWave } from "@/components/background-wave";
@@ -29,7 +29,7 @@ export default function InterviewFinancePage() {
     } catch {}
   }, []);
 
-  useMemo(() => {
+  useEffect(() => {
     if (!isConnected) return;
     if (!isTimerActive) return;
     if (timeLeft <= 0) {
