@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import * as React from "react";
 import { useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConversation } from "@11labs/react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ type ConvAIProps = {
   onEnded?: () => void;
   agentKey?: string; // selects env-based agent id on the server
   hideTranscript?: boolean; // when true, do not render internal transcript list
+  avatarSrc?: string; // optional avatar image to overlay on the orb
 };
 
 export function ConvAI(props: ConvAIProps) {
@@ -155,16 +157,28 @@ export function ConvAI(props: ConvAIProps) {
             </div>
           </CardHeader>
           <div className={"flex flex-col items-center gap-y-4 text-center"}>
-            <div
-              className={cn(
-                "orb my-16 mx-auto self-center",
-                conversation.status === "connected" && conversation.isSpeaking
-                  ? "orb-active animate-orb"
-                  : conversation.status === "connected"
-                  ? "animate-orb-slow orb-inactive"
-                  : "orb-inactive"
-              )}
-            ></div>
+            <div className="relative my-16 mx-auto self-center">
+              <div
+                className={cn(
+                  "orb z-0",
+                  conversation.status === "connected" && conversation.isSpeaking
+                    ? "orb-active animate-orb"
+                    : conversation.status === "connected"
+                    ? "animate-orb-slow orb-inactive"
+                    : "orb-inactive"
+                )}
+              ></div>
+              {props.avatarSrc ? (
+                <Image
+                  src={props.avatarSrc}
+                  alt="Avatar"
+                  width={220}
+                  height={220}
+                  priority
+                  className="absolute inset-0 m-auto h-[220px] w-[220px] rounded-full object-cover pointer-events-none z-10"
+                />
+              ) : null}
+            </div>
 
             <Button
               variant={"outline"}

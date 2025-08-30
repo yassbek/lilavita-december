@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CheckCircle, User, MessageSquare, Camera, Mic, Info, ArrowRight, Loader2, UploadCloud, FileCheck2 } from "lucide-react"
+import { CheckCircle, User, MessageSquare, Mic, Info, ArrowRight, Loader2, UploadCloud, FileCheck2 } from "lucide-react"
 
 // Korrekte Imports für das Directus SDK
 import { createDirectus, staticToken, rest, uploadFiles } from '@directus/sdk';
@@ -325,29 +325,22 @@ export default function StartPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
-                        <Camera className="w-5 h-5" />
+                        <Mic className="w-5 h-5" />
                         <span>Technische Voraussetzungen</span>
                     </CardTitle>
                     <CardDescription>Bitte stelle sicher, dass dein Gerät diese Anforderungen erfüllt.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <Camera className="w-5 h-5 text-green-600" />
-                            <div>
-                                <p className="font-medium text-green-900">Kamerazugriff</p>
-                                <p className="text-sm text-green-700">Erforderlich</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <Mic className="w-5 h-5 text-green-600" />
+                    <div className="flex justify-center">
+                        <div className="flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg w-fit">
+                            <Mic className="w-6 h-6 text-green-600" />
                             <div>
                                 <p className="font-medium text-green-900">Mikrofonzugriff</p>
                                 <p className="text-sm text-green-700">Erforderlich</p>
                             </div>
                         </div>
                     </div>
-                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
                         <p className="text-sm text-yellow-800">
                             <strong>Hinweis:</strong> Du wirst beim Start des ersten Interviews aufgefordert, den Zugriff zu erlauben.
                         </p>

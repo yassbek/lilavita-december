@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ConvAI from "@/components/ConvAI";
 import { BackgroundWave } from "@/components/background-wave";
@@ -160,6 +160,7 @@ export default function InterviewFinancePage() {
                 onEnded={() => {}}
                 endSignal={endSignal}
                 agentKey="finance"
+                avatarSrc="/anne_profile.jpeg"
                 hideTranscript
               />
             </div>
@@ -184,6 +185,7 @@ export default function InterviewFinancePage() {
               onEnded={() => {}}
               endSignal={endSignal}
               agentKey="finance"
+              avatarSrc="/anne_profile.jpeg"
               hideTranscript
             />
             <div className="mt-6 flex justify-center">

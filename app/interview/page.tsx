@@ -176,6 +176,7 @@ export default function InterviewPage() {
                 onMessage={onMessage}
                 onEnded={() => {}}
                 endSignal={endSignal}
+                avatarSrc="/roman_profile.jpeg"
                 hideTranscript
               />
             </div>
@@ -199,6 +200,7 @@ export default function InterviewPage() {
               onMessage={onMessage}
               onEnded={() => {}}
               endSignal={endSignal}
+              avatarSrc="/roman_profile.jpeg"
               hideTranscript
             />
             <div className="mt-6 flex justify-center">
