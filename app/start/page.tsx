@@ -29,7 +29,8 @@ const SECTOR_MAP: { [key: string]: string } = {
   'ernaehrung_landwirtschaft': 'Ernährung & Landwirtschaft',
   'klimaschutz_energien': 'Klimaschutz & Energien',
   'staedte_mobilitaet': 'Städte & Mobilität',
-  'bildung_inklusion': 'Bildung & Inklusion'
+  'bildung_inklusion': 'Bildung & Inklusion',
+  'demkokratisierung_gesellschaft': 'Demokratiesierung & Gesellschaft'
 };
 
 export default function StartPage() {

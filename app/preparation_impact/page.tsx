@@ -23,10 +23,10 @@ export default function PreparationPage() {
             title: "Strategie & Wirkungslogik",
             description: "Die strategische Grundlage eures Impacts: Vom großen Ziel zur konkreten Wirkungskette.",
             topics: [
+                "Die strategische Grundlage eures Impacts: Vom großen Ziel zur konkreten Wirkungskette",
                 "Verankerung der Mission und klare Zuordnung zu den UN SDGs",
                 "Ausgearbeitete Theory of Change (ToC) als Basis der Wirkungslogik",
                 "Definition von Inputs, Outputs, Outcomes und langfristigem Impact",
-                "Identifikation und Überprüfung eurer wichtigsten Wirkungsannahmen",
             ],
         },
         {
@@ -35,9 +35,7 @@ export default function PreparationPage() {
             description: "Wie ihr euren sozialen oder ökologischen Fußabdruck quantifiziert und bewertet.",
             topics: [
                 "Definition von Kern-KPIs (Output, Outcome, Impact) entlang der ToC",
-                "Anwendung von SROI zur Monetarisierung sozialer Wirkung (für soziale Modelle)",
-                "Nutzung von Life Cycle Assessment (LCA) zur Messung ökologischer Wirkung (für Umweltmodelle)",
-                "Auswahl von Kennzahlen aus anerkannten Standards (z.B. IRIS+)",
+                "Auswahl von Kennzahlen aus anerkannten Standards",
             ],
         },
         {
@@ -45,9 +43,7 @@ export default function PreparationPage() {
             title: "Management & Kommunikation",
             description: "Wie ihr Wirkung steuert, in Entscheidungen integriert und transparent berichtet.",
             topics: [
-                "Nutzung von Management-Frameworks wie dem IMMPACT Model zur Selbsteinschätzung",
-                "Implementierung eines kontinuierlichen Verbesserungs-Kreislaufs (Messen → Lernen → Steuern)",
-                "Systematische Datenerhebung und Aufbau eines Wirkungs-Dashboards",
+                "Wie ihr Wirkung steuert, in Entscheidungen integriert und transparent berichtet.",
                 "Transparentes Reporting der Wirkung an Stakeholder (Investoren, Kunden)",
             ],
         },
@@ -58,10 +54,6 @@ export default function PreparationPage() {
         "Ich kann unsere Theory of Change (Wirkungslogik) vorstellen.",
         "Ich kann unsere wichtigsten Impact-KPIs (Output, Outcome, Impact) benennen.",
         "Ich kann beschreiben, wie wir unsere Wirkungsdaten erheben und deren Qualität sicherstellen.",
-        "Ich kann ein Beispiel nennen, wo Impact-Daten unsere Strategie beeinflusst haben.",
-        "Ich kann erklären, wie wir unsere Wirkung an Stakeholder kommunizieren.",
-        "Ich bin bereit, über die für IMM zuständige Person und die investierten Ressourcen zu sprechen.",
-        "Ich habe über Wirkungsrisiken (z.B. Rebound-Effekte) nachgedacht und wie wir ihnen begegnen.",
     ]
 
     const introText = "In diesem Gespräch wollen wir euer Verständnis und die Umsetzung von Impact Measurement & Management (IMM) beleuchten. Das KI-gestützte Interview hilft uns einzuschätzen, wie tief die Wirkungsorientierung in eurer Strategie, euren Prozessen und eurer Kultur verankert ist."
