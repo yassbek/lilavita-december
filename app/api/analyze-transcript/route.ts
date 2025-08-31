@@ -103,7 +103,7 @@ function isValidInterviewType(type: string): type is InterviewType {
 }
 
 // Build a structured-output schema for Gemini, based on the fields
-function buildResponseSchema(fields: string[]) {
+function buildResponseSchema(fields: readonly string[]) {
   const schemaProps: Record<
     string,
     { type: string; items?: { type: string } }
