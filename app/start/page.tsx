@@ -172,7 +172,7 @@ export default function StartPage() {
   const steps = [
      { id: 1, title: "Online-Formular", description: "Grundlegende Informationen und Firmendetails.", status: "completed", icon: CheckCircle },
      { id: 2, title: "Start & Vorbereitung", description: "Du befindest dich gerade in diesem Schritt.", status: "current", icon: User },
-     { id: 3, title: "KI-gestützte Interviews", description: "Vier kurze Gespräche zu Impact, Marketing, Finanzen & Vertrieb.", status: "pending", icon: MessageSquare },
+     { id: 3, title: "KI-gestützte Interviews", description: "Fünf kurze Gespräche zu Readiness, Impact, Marketing, Finanzen & Vertrieb.", status: "pending", icon: MessageSquare },
      { id: 4, title: "Einreichung abgeschlossen", description: "Überprüfung und finale Bestätigung.", status: "pending", icon: CheckCircle },
   ]
 
