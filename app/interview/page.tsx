@@ -105,12 +105,12 @@ export default function InterviewPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-5">
               <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center">
-                <Image src="/impactfactory_logo.png" alt="Impact Factory Logo" width={48} height={48} />
+                <Image src="/" alt="Impact Factory Logo" width={48} height={48} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">KI-gestütztes Interview</h1>
                 <div className="flex items-center space-x-2 mt-1">
-                  <p className="text-gray-600">Readiness-Assessment</p>
+                  <p className="text-gray-600"></p>
                   <Badge
                     variant="outline"
                     className={`px-2 py-0.5 text-xs ${isConnected ? "border-green-500 text-green-600 bg-green-50" : "border-gray-300 text-gray-600 bg-gray-50"}`}
