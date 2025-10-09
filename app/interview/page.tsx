@@ -105,7 +105,7 @@ export default function InterviewPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-5">
               <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center">
-                <Image src="/" alt="Impact Factory Logo" width={48} height={48} />
+                <Image src="/" alt="" width={48} height={48} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">KI-gestütztes Interview</h1>
