@@ -11,7 +11,7 @@ const config: Config = {
     extend: {
       colors: {
         // HIER DEINE FARBE HINZUFÜGEN
-        brand: '#D4AE36',
+        brand: '#7f539d',
 
         // Bestehende Farben bleiben unberührt
         background: 'hsl(var(--background))',

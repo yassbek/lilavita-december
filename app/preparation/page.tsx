@@ -2,57 +2,62 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
+// HINWEIS: 'next/navigation' wurde entfernt, da es in dieser Umgebung zu einem Kompilierungsfehler führt.
+// Die Navigation wird stattdessen mit Standard-Browserfunktionen gehandhabt.
+// import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CheckCircle, Lightbulb, Target, Users, Cog, ArrowRight, Info } from "lucide-react"
+// The 'Pill' icon is added to better match the pharmacy theme.
+import { CheckCircle, Lightbulb, Target, Users, ArrowRight, Info, Pill } from "lucide-react"
 
 export default function PreparationPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams();
+  // const router = useRouter() // Entfernt
+  // const searchParams = useSearchParams(); // Entfernt
   const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
   const [isReady, setIsReady] = useState(false)
 
-  // ... (restlicher Code bleibt unverändert)
-  const readinessAreas = [
+  // Adapted content for the pharmacy training module
+  const trainingAreas = [
     {
-      icon: Cog,
-      title: "Technologie-Reife",
-      description: "Eure Produktentwicklung und technische Reife",
+      icon: CheckCircle,
+      title: "Produktwissen & Wirkung",
+      description: "Dein Wissen über das Produkt und seine Vorteile.",
       topics: [
-        "Technische Hürden und wie ihr sie gemeistert habt",
-        "Skalierbarkeit eurer technischen Lösung",
-        "Geistiges Eigentum und Patente",
+        "Wirkung auf Muskeln, Nerven und Energie",
+        "Vorteile der Citratform (Verfügbarkeit, Verträglichkeit)",
+        "Argumente: Reinheit und Apothekenqualität",
       ],
     },
     {
       icon: Users,
-      title: "Team- Reife",
-      description: "Eure Teamzusammensetzung",
+      title: "Zielgruppen & Indikationen",
+      description: "Für welche Kunden das Produkt ideal ist.",
       topics: [
-        "Teamaufstellung und Kernkompetenzen",
-        "Bisherige Erfahrung und Erfolge",
+        "Kunden mit nächtlichen Wadenkrämpfen",
+        "Personen, die Diuretika einnehmen",
+        "Erhöhter Bedarf bei Sport und Stress",
       ],
     },
     {
       icon: Target,
-      title: "Organisations-Reife",
-      description: "Eure Organisationsstruktur",
+      title: "Argumentation & Einwandbehandlung",
+      description: "Wie du im Gespräch überzeugend reagierst.",
       topics: [
-        "Rollenverteilung und wie ihr Entscheidungen trefft",
-        "Unternehmenskultur und gemeinsame Werte",
+        "Umgang mit Preis-Einwänden ('zu teuer')",
+        "Abgrenzung zu Drogerie-Produkten",
+        "Reaktion auf Skepsis ('Brauche ich das wirklich?')",
       ],
     },
   ]
 
   const preparationChecklist = [
-    "Ich kenne die Stärken und Schwächen unseres Teams",
-    "Ich bin bereit, über gemeisterte Herausforderungen zu sprechen",
-    "Ich kenne unsere Prozesse und bin bereit, darüber zu sprechen",
-    "Ich weiß um unsere organisatorischen Strukturen Bescheid",
-    "Ich kenne den Stand unserer technischen, insbesondere digitalen Ausstattung",
-    "Ich kenne unsere technischen Stärken und Schwächen",
+    "Ich kenne die Hauptwirkungen von Magnesium auf Muskeln, Nerven und Energie.",
+    "Ich kann die Vorteile der Citratform erklären (z.B. gute Verfügbarkeit).",
+    "Ich kenne die wichtigsten Zielgruppen (z.B. bei Wadenkrämpfen, Diuretika-Einnahme).",
+    "Ich bin vorbereitet, den Preisunterschied zu Drogerieprodukten zu begründen.",
+    "Ich kann auf den Einwand 'Ich ernähre mich gesund, das reicht doch' reagieren.",
+    "Ich habe eine klare Ein-Satz-Empfehlung für den Kunden parat.",
   ]
 
   const handleCheckboxChange = (index: number, checked: boolean) => {
@@ -61,69 +66,68 @@ export default function PreparationPage() {
     const allChecked = preparationChecklist.every((_, i) => newCheckedItems[i])
     setIsReady(allChecked)
   }
-  
-  const handleStartInterview = () => {
-    const params = new URLSearchParams(searchParams);
-    router.push(`/interview?${params.toString()}`);
-  }
 
+  const handleStartSimulation = () => {
+    // const params = new URLSearchParams(searchParams); // Entfernt
+    // The destination URL can be updated if needed, e.g., to /simulation
+    // router.push(`/simulation?${params.toString()}`); // Ersetzt durch window.location
+    window.location.href = "/interview";
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
-        {/* --- ANPASSUNG 1: Breiterer Container, um alles nach links zu rücken --- */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            {/* --- ANPASSUNG 2: Größerer Abstand zwischen Logo und Text --- */}
             <div className="flex items-center space-x-5">
-              {/* --- ANPASSUNG 3: Größerer Container und größeres Logo-Bild --- */}
-              <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center">
-                <Image 
-                  src="/impactfactory_logo.png" 
-                  alt="Impact Factory Logo" 
-                  width={48} 
-                  height={48}
-                />
+              {/* --- Anpassung: Farbe wurde zu Violett geändert --- */}
+              <div className="w-16 h-16 bg-purple-600 rounded-lg flex items-center justify-center">
+                <Pill className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Interview-Vorbereitung</h1>
-                <p className="text-gray-600">Mach dich bereit für dein KI-Interview</p>
+                {/* --- Anpassung: Titel und Untertitel für den Apotheken-Kontext --- */}
+                <h1 className="text-2xl font-bold text-gray-900">Beratungssimulation: Magnesiumcitrat 130</h1>
+                <p className="text-gray-600">Bereite dich auf das Kundengespräch vor</p>
               </div>
             </div>
-            
           </div>
         </div>
       </header>
 
-      {/* Hauptinhalt: ebenfalls breiter gemacht für einheitliches Layout */}
+      {/* Hauptinhalt */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Einleitung */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Lightbulb className="w-5 h-5 text-brand" />
-              <span>Über das Interview</span>
+              <Lightbulb className="w-5 h-5 text-purple-600" />
+              {/* --- Anpassung: Titel --- */}
+              <span>Über diese Simulation</span>
             </CardTitle>
             <CardDescription>
-              Unser KI-Interviewer bewertet dein Startup in drei Kernbereichen.
+              {/* --- Anpassung: Beschreibung --- */}
+              Diese Simulation trainiert dich für ein erfolgreiches Beratungsgespräch zu Magnesiumcitrat 130.
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* --- Anpassung: Einleitungstext --- */}
             <p className="text-gray-700 mb-4">
-              In unserem Bewerbungsprozess wollen wir verstehen, wie startklar dein Startup in den Bereichen Technologie, Team & Organisation ist. Das KI-gestützte Gespräch hilft uns dabei, eure Reife und euer Potenzial einzuschätzen.
+              In dieser Simulation üben wir, die Vorteile von Magnesiumcitrat 130 aktiv zu kommunizieren, passende Kundengruppen zu erkennen und überzeugend auf typische Fragen und Einwände zu reagieren. Ziel ist es, dass du dich im HV-Alltag sicher fühlst, das Produkt proaktiv zu empfehlen.
             </p>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
-                <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                <Info className="w-5 h-5 text-purple-600 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-blue-900 mb-2">Format des Interviews</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Dauer: 15-20 Minuten</li>
-                    <li>• Format: Videogespräch mit einem KI-Agenten</li>
-                    <li>• Sprache: Deutsch oder Englisch (deine Wahl)</li>
-                    <li>• Aufzeichnung: Das Gespräch wird zur Auswertung aufgezeichnet</li>
+                  {/* --- Anpassung: Format-Titel --- */}
+                  <h4 className="font-medium text-purple-900 mb-2">Format der Simulation</h4>
+                  {/* --- Anpassung: Format-Details aus dem Lernmodul --- */}
+                  <ul className="text-sm text-purple-800 space-y-1">
+                    <li>• Dauer: 3-5 Minuten</li>
+                    <li>• Format: Gesprächssimulation mit einem KI-Kunden</li>
+                    <li>• Sprache: Deutsch</li>
+                    <li>• Ziel: Das Gespräch wird zur Verbesserung deiner Beratungsfähigkeiten analysiert.</li>
                   </ul>
                 </div>
               </div>
@@ -133,16 +137,18 @@ export default function PreparationPage() {
 
         {/* Themenbereiche */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Worüber wir sprechen</h2>
+          {/* --- Anpassung: Titel --- */}
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Schwerpunkte der Beratung</h2>
           <div className="grid lg:grid-cols-3 gap-6">
-            {readinessAreas.map((area, index) => {
+            {/* --- Anpassung: Inhalte werden aus der neuen 'trainingAreas'-Variable geladen --- */}
+            {trainingAreas.map((area, index) => {
               const Icon = area.icon
               return (
                 <Card key={index}>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-brand/20 rounded-lg flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-brand" />
+                      <div className="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-purple-600" />
                       </div>
                       <span>{area.title}</span>
                     </CardTitle>
@@ -152,7 +158,7 @@ export default function PreparationPage() {
                     <div className="space-y-2">
                       {area.topics.map((topic, topicIndex) => (
                         <div key={topicIndex} className="flex items-start space-x-2">
-                          <div className="w-1.5 h-1.5 bg-brand rounded-full mt-2 flex-shrink-0"></div>
+                          <div className="w-1.5 h-1.5 bg-purple-600 rounded-full mt-2 flex-shrink-0"></div>
                           <p className="text-sm text-gray-700">{topic}</p>
                         </div>
                       ))}
@@ -168,10 +174,12 @@ export default function PreparationPage() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Vorbereitungs-Checkliste</CardTitle>
-            <CardDescription>Geh diese Punkte durch, um sicherzustellen, dass du startklar bist.</CardDescription>
+            {/* --- Anpassung: Beschreibung --- */}
+            <CardDescription>Geh diese Punkte durch, um sicherzustellen, dass du bereit für das Kundengespräch bist.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* --- Anpassung: Inhalte werden aus der neuen 'preparationChecklist'-Variable geladen --- */}
               {preparationChecklist.map((item, index) => (
                 <div key={index} className="flex items-start space-x-3">
                   <Checkbox
@@ -184,7 +192,7 @@ export default function PreparationPage() {
                     htmlFor={`checklist-${index}`}
                     className={`text-sm cursor-pointer ${
                       checkedItems[index]
-                        ? "text-gray-900 line-through decoration-brand"
+                        ? "text-gray-900 line-through decoration-purple-600"
                         : "text-gray-700"
                     }`}
                   >
@@ -201,25 +209,28 @@ export default function PreparationPage() {
                   <p className="font-medium text-green-900">Du bist startklar!</p>
                 </div>
                 <p className="text-sm text-green-700 mt-1">
-                  Alle Punkte der Checkliste sind erledigt. Du kannst jetzt dein Interview starten.
+                  Alle Punkte der Checkliste sind erledigt. Du kannst jetzt deine Beratungssimulation starten.
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
-        
+
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Button
-            onClick={handleStartInterview}
+            // --- Anpassung: Funktionsaufruf bleibt, da die Logik dieselbe ist ---
+            onClick={handleStartSimulation}
             disabled={!isReady}
-            className="bg-brand hover:bg-brand/90 text-black font-medium px-8 py-3 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            // --- Anpassung: Markenfarbe wurde zu Violett geändert ---
+            className="bg-purple-600 hover:bg-purple-600/90 text-white font-medium px-8 py-3 disabled:bg-gray-300 disabled:cursor-not-allowed"
             size="lg"
           >
-            Interview starten
+            {/* --- Anpassung: Button-Text --- */}
+            Simulation starten
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
-          <Button variant="outline" onClick={() => router.push("/")} size="lg">
+          <Button variant="outline" onClick={() => window.location.href = "/"} size="lg">
             Zurück zur Übersicht
           </Button>
         </div>
@@ -227,3 +238,4 @@ export default function PreparationPage() {
     </div>
   )
 }
+
