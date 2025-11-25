@@ -198,7 +198,7 @@ export default function CompletionPage() {
 
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
       // Nutze das Modell aus deiner funktionierenden File
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
         method: 'POST',

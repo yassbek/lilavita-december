@@ -205,7 +205,7 @@ export default function CompletionPage() {
       const systemPrompt = "Du bist ein erfahrener Apotheken-Coach und Experte für Magnesiumcitrat 130. Deine Aufgabe ist es, die Leistung des Nutzers zu analysieren und weiterführende Fragen zum Produkt, zur Wirkung und zur Kundenberatung klar und präzise zu beantworten. Bleibe stets in deiner Rolle als Coach.";
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
       // Updated Model URL to a newer preview version or standard endpoint
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       try {
         const response = await fetch(apiUrl, {

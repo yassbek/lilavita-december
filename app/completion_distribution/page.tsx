@@ -15,7 +15,14 @@ import {
   Brain,
   Activity,
   Baby,
-  Sun
+  Sun,
+  ShieldCheck,
+  Users,
+  Target,
+  Heart,
+  Shield,
+  AlertTriangle,
+  Plane
 } from "lucide-react"
 
 // ==================================================================
@@ -45,25 +52,44 @@ type ChatMessage = {
   text: string;
 };
 
+interface QuizResult {
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  moduleTopic: string;
+}
+
 // ==================================================================
-// 2. ICON MAPPING
+// 2. ICON MAPPING (erweitert für alle Themen)
 // ==================================================================
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  // B-Vitamine Icons
   Zap: Zap,
   Pill: Pill,
   Brain: Brain,
   Activity: Activity,
   Baby: Baby,
   Sun: Sun,
+  // Magnesium Icons
+  ShieldCheck: ShieldCheck,
+  Users: Users,
+  Target: Target,
+  Heart: Heart,
+  // Perenterol Icons
+  Shield: Shield,
+  AlertTriangle: AlertTriangle,
+  Plane: Plane,
+  // Fallback
+  Sparkles: Sparkles,
   Default: Sparkles
 };
 
 // ==================================================================
-// 3. HELPER FUNCTION (SIMPLIFIED - NO REGEX)
+// 3. HELPER FUNCTION
 // ==================================================================
 const cleanText = (text: string) => {
   if (!text) return "";
-  // Keine komplexe Bereinigung mehr, um Build-Fehler zu vermeiden.
   return text;
 };
 
@@ -151,7 +177,7 @@ export default function CompletionPage() {
   const [learningModules, setLearningModules] = useState<LearningModule[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<Record<number, { selectedAnswer: number | null; isCorrect: boolean | null }>>({});
   const [completedModules, setCompletedModules] = useState<boolean[]>([]);
-  const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
+  const [quizResults, setQuizResults] = useState<QuizResult[]>([]); // NEU: Detaillierte Ergebnisse
 
   // Chat State
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -160,96 +186,214 @@ export default function CompletionPage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const analysisTriggered = useRef(false);
 
+  // Transkript aus dem Interview laden
+  const [interviewTranscript, setInterviewTranscript] = useState<string>('');
+
   useEffect(() => {
     const timer = setTimeout(() => setShowSuccess(true), 300);
 
     const loadData = () => {
       try {
+        // Dynamische Module laden
         const storedData = sessionStorage.getItem('dynamicLearningData');
         if (storedData) {
           const parsed = JSON.parse(storedData);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setLearningModules(parsed);
             setCompletedModules(Array(parsed.length).fill(false));
-            setQuizAnswers(Array(parsed.length).fill(null));
+            setQuizResults([]);
             setIsLoadingModules(false);
-            return;
           }
+        } else {
+          // Fallback
+          setLearningModules(fallbackModules);
+          setCompletedModules(Array(fallbackModules.length).fill(false));
+          setQuizResults([]);
+          setIsLoadingModules(false);
+        }
+
+        // Interview-Transkript laden (falls vorhanden)
+        const transcript = sessionStorage.getItem('interviewTranscript');
+        if (transcript) {
+          setInterviewTranscript(transcript);
         }
       } catch (e) {
-        console.error("Fehler beim Laden der dynamischen Daten:", e);
+        console.error("Fehler beim Laden der Daten:", e);
+        setLearningModules(fallbackModules);
+        setCompletedModules(Array(fallbackModules.length).fill(false));
+        setIsLoadingModules(false);
       }
-      // Fallback
-      setLearningModules(fallbackModules);
-      setCompletedModules(Array(fallbackModules.length).fill(false));
-      setQuizAnswers(Array(fallbackModules.length).fill(null));
-      setIsLoadingModules(false);
     };
 
     const loadTimer = setTimeout(loadData, 1500);
     return () => { clearTimeout(timer); clearTimeout(loadTimer); };
   }, []);
 
-  const callGeminiAPI = useCallback(async (history: ChatMessage[]) => {
+  // ═══════════════════════════════════════════════════════════════
+  // VERBESSERTE GEMINI API FUNKTION
+  // ═══════════════════════════════════════════════════════════════
+  const callGeminiAPI = useCallback(async (history: ChatMessage[], isInitialAnalysis: boolean = false) => {
     setIsGeminiLoading(true);
+
     try {
-      const systemPrompt = "Du bist ein erfahrener Apotheken-Coach. Gib kurzes, motivierendes Feedback basierend auf dem Quiz.";
+      // Detaillierter System-Prompt für echte Analyse
+      const systemPrompt = `Du bist ein erfahrener Apotheken-Coach und Trainer. Deine Aufgabe ist es, dem Mitarbeiter konstruktives, personalisiertes Feedback zu geben.
+
+WICHTIGE REGELN:
+1. Beziehe dich KONKRET auf die Quiz-Antworten des Mitarbeiters
+2. Nenne SPEZIFISCH welche Fragen richtig/falsch beantwortet wurden
+3. Erkläre bei falschen Antworten, warum die richtige Antwort korrekt ist
+4. Gib PRAKTISCHE Tipps für den Apothekenalltag
+5. Sei motivierend aber ehrlich
+6. Verwende "Du" (informell)
+7. Halte dich kurz und prägnant (max 200 Wörter)
+
+STRUKTUR DEINER ANTWORT:
+- Starte mit einer kurzen Zusammenfassung (X von Y richtig)
+- Lobe konkret, was gut war
+- Erkläre Fehler und die richtigen Antworten
+- Gib 1-2 praktische Tipps für den HV
+- Ende mit einer Ermutigung`;
+
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: history.map(msg => ({ role: msg.role, parts: [{ text: msg.text }] })),
+          contents: history.map(msg => ({
+            role: msg.role === 'model' ? 'model' : 'user',
+            parts: [{ text: msg.text }]
+          })),
           systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+          }
         })
       });
 
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini API Error:", response.status, errorText);
+        throw new Error(`API Error: ${response.status}`);
+      }
+
       const result = await response.json();
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Fehler bei der Antwort.";
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Entschuldigung, ich konnte keine Analyse erstellen.";
       setChatHistory(prev => [...prev, { role: 'model', text }]);
-    } catch (error) {
-      setChatHistory(prev => [...prev, { role: 'model', text: "Ein Fehler ist aufgetreten." }]);
+    } catch (err) {
+      console.error("Gemini Fehler:", err);
+      setChatHistory(prev => [...prev, {
+        role: 'model',
+        text: "Es gab ein technisches Problem. Bitte versuche es erneut oder stelle mir eine direkte Frage zu deinen Quiz-Ergebnissen."
+      }]);
     } finally {
       setIsGeminiLoading(false);
     }
   }, []);
 
-  // Trigger Analysis
+  // Progress berechnen
   const progress = learningModules.length > 0 ? (completedModules.filter(Boolean).length / learningModules.length) * 100 : 0;
   const allModulesCompleted = progress === 100 && learningModules.length > 0;
 
+  // ═══════════════════════════════════════════════════════════════
+  // VERBESSERTE ANALYSE-TRIGGER
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
-    if (allModulesCompleted && !analysisTriggered.current && learningModules.length > 0) {
+    if (allModulesCompleted && !analysisTriggered.current && quizResults.length > 0) {
       analysisTriggered.current = true;
-      const summary = learningModules.map((m, i) =>
-        `Frage: "${m.quiz.question}" | Antwort: "${quizAnswers[i]}"`
-      ).join('\n');
 
-      const msg: ChatMessage = { role: 'user', text: `Quiz beendet. Zusammenfassung:\n${summary}\nBitte um kurzes Feedback.` };
-      callGeminiAPI([msg]);
+      // Detaillierte Zusammenfassung erstellen
+      const correctCount = quizResults.filter(r => r.isCorrect).length;
+      const totalCount = quizResults.length;
+
+      // Detaillierter Prompt mit allen Informationen
+      let analysisPrompt = `Ich habe gerade das Apotheken-Training abgeschlossen. Hier sind meine Quiz-Ergebnisse:
+
+📊 ERGEBNIS: ${correctCount} von ${totalCount} Fragen richtig (${Math.round(correctCount / totalCount * 100)}%)
+
+📝 DETAILLIERTE ANTWORTEN:
+`;
+
+      quizResults.forEach((result, index) => {
+        const status = result.isCorrect ? '✅' : '❌';
+        analysisPrompt += `
+${index + 1}. ${result.moduleTopic}
+   Frage: "${result.question}"
+   ${status} Meine Antwort: "${result.userAnswer}"
+   ${!result.isCorrect ? `   ➡️ Richtige Antwort: "${result.correctAnswer}"` : ''}
+`;
+      });
+
+      // Falls Transkript vorhanden, auch das hinzufügen
+      if (interviewTranscript) {
+        analysisPrompt += `
+
+📞 AUSZUG AUS MEINEM BERATUNGSGESPRÄCH:
+${interviewTranscript.substring(0, 1000)}${interviewTranscript.length > 1000 ? '...' : ''}
+`;
+      }
+
+      analysisPrompt += `
+
+Bitte gib mir ein persönliches Feedback zu meiner Leistung. Was habe ich gut gemacht? Wo muss ich noch üben? Welche Tipps hast du für meinen nächsten Kundenkontakt?`;
+
+      const msg: ChatMessage = { role: 'user', text: analysisPrompt };
+      setChatHistory([msg]);
+      callGeminiAPI([msg], true);
     }
-  }, [allModulesCompleted, callGeminiAPI, quizAnswers, learningModules]);
+  }, [allModulesCompleted, callGeminiAPI, quizResults, interviewTranscript]);
 
+  // ═══════════════════════════════════════════════════════════════
+  // VERBESSERTE ANTWORT-AUSWAHL
+  // ═══════════════════════════════════════════════════════════════
   const handleAnswerSelect = (modIdx: number, ansIdx: number) => {
     if (completedModules[modIdx]) return;
-    const module = learningModules[modIdx];
-    const isCorrect = module.quiz.answers[ansIdx].isCorrect;
 
+    const currentModule = learningModules[modIdx];
+    const selectedAnswer = currentModule.quiz.answers[ansIdx];
+    const isCorrect = selectedAnswer.isCorrect;
+    const correctAnswer = currentModule.quiz.answers.find(a => a.isCorrect);
+
+    // Quiz-State aktualisieren
     setActiveQuiz(prev => ({ ...prev, [modIdx]: { selectedAnswer: ansIdx, isCorrect } }));
-    setQuizAnswers(prev => { const n = [...prev]; n[modIdx] = module.quiz.answers[ansIdx].text; return n; });
-    setTimeout(() => setCompletedModules(prev => { const n = [...prev]; n[modIdx] = true; return n; }), 1000);
+
+    // Detailliertes Ergebnis speichern
+    setQuizResults(prev => [...prev, {
+      question: currentModule.quiz.question,
+      userAnswer: selectedAnswer.text,
+      correctAnswer: correctAnswer?.text || '',
+      isCorrect: isCorrect,
+      moduleTopic: currentModule.title
+    }]);
+
+    // Modul als abgeschlossen markieren
+    setTimeout(() => {
+      setCompletedModules(prev => {
+        const n = [...prev];
+        n[modIdx] = true;
+        return n;
+      });
+    }, 1000);
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || isGeminiLoading) return;
-    const newMsg: ChatMessage = { role: 'user', text: userInput };
-    setChatHistory([...chatHistory, newMsg]);
+
+    // Kontext für Folgefragen mitgeben
+    const contextMessage = quizResults.length > 0
+      ? `(Kontext: Der Nutzer hat ${quizResults.filter(r => r.isCorrect).length}/${quizResults.length} Quiz-Fragen richtig beantwortet)\n\nNutzer fragt: ${userInput}`
+      : userInput;
+
+    const newMsg: ChatMessage = { role: 'user', text: userInput }; // Zeige nur die User-Frage an
+    const apiMsg: ChatMessage = { role: 'user', text: contextMessage }; // Sende Kontext mit
+
+    setChatHistory(prev => [...prev, newMsg]);
     setUserInput('');
-    callGeminiAPI([...chatHistory, newMsg]);
+    callGeminiAPI([...chatHistory, apiMsg]);
   };
 
   useEffect(() => {
@@ -313,10 +457,10 @@ export default function CompletionPage() {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                {learningModules.map((module, index) => {
+                {learningModules.map((mod, index) => {
                   const quizState = activeQuiz[index];
                   const isCompleted = completedModules[index];
-                  const ModuleIcon = iconMap[module.icon] || iconMap.Default;
+                  const ModuleIcon = iconMap[mod.icon] || iconMap.Default;
 
                   return (
                     <Card key={index} className={`${isCompleted ? 'border-green-500 ring-1 ring-green-100' : ''}`}>
@@ -327,14 +471,14 @@ export default function CompletionPage() {
                           </div>
                           {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
                         </div>
-                        <CardTitle className="mt-4 text-lg">{module.title}</CardTitle>
-                        <CardDescription>{module.description}</CardDescription>
+                        <CardTitle className="mt-4 text-lg">{mod.title}</CardTitle>
+                        <CardDescription>{mod.description}</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="bg-gray-50 p-4 rounded-lg mb-4">
                           <h4 className="text-sm font-semibold text-gray-900 mb-2">Wichtiges Praxiswissen:</h4>
                           <ul className="space-y-2">
-                            {module.content.map((item, i) => (
+                            {mod.content.map((item, i) => (
                               <li key={i} className="flex items-start text-xs text-gray-700">
                                 <div className="w-1 h-1 bg-brand rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
                                 <span dangerouslySetInnerHTML={{ __html: cleanText(item) }}></span>
@@ -344,13 +488,22 @@ export default function CompletionPage() {
                         </div>
 
                         <div>
-                          <p className="text-sm font-medium text-gray-900 mb-3">{module.quiz.question}</p>
+                          <p className="text-sm font-medium text-gray-900 mb-3">{mod.quiz.question}</p>
                           <div className="space-y-2">
-                            {module.quiz.answers.map((answer, answerIndex) => {
+                            {mod.quiz.answers.map((answer, answerIndex) => {
                               const isSelected = quizState?.selectedAnswer === answerIndex;
-                              const buttonClass = isSelected
-                                ? quizState.isCorrect ? 'bg-green-100 border-green-500 text-green-900' : 'bg-red-100 border-red-500 text-red-900'
-                                : 'bg-white hover:bg-gray-50';
+                              const showCorrect = isCompleted && answer.isCorrect;
+
+                              let buttonClass = 'bg-white hover:bg-gray-50';
+                              if (isSelected) {
+                                buttonClass = quizState.isCorrect
+                                  ? 'bg-green-100 border-green-500 text-green-900'
+                                  : 'bg-red-100 border-red-500 text-red-900';
+                              } else if (showCorrect && !quizState?.isCorrect) {
+                                // Zeige die richtige Antwort wenn falsch gewählt
+                                buttonClass = 'bg-green-50 border-green-300 text-green-800';
+                              }
+
                               return (
                                 <Button
                                   key={answerIndex}
@@ -359,7 +512,13 @@ export default function CompletionPage() {
                                   onClick={() => handleAnswerSelect(index, answerIndex)}
                                   disabled={isCompleted}
                                 >
-                                  {isSelected && (quizState.isCorrect ? <CheckCircle className="w-4 h-4 mr-2" /> : <XCircle className="w-4 h-4 mr-2" />)}
+                                  {isSelected && (quizState.isCorrect
+                                    ? <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                                    : <XCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                                  )}
+                                  {showCorrect && !isSelected && !quizState?.isCorrect && (
+                                    <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-green-600" />
+                                  )}
                                   {answer.text}
                                 </Button>
                               );
@@ -380,10 +539,18 @@ export default function CompletionPage() {
                     <Sparkles className="w-5 h-5" />
                     <span>KI-Analyse & Coaching</span>
                   </CardTitle>
-                  <CardDescription>Dein persönliches Feedback.</CardDescription>
+                  <CardDescription>
+                    Dein persönliches Feedback basierend auf deinen Antworten
+                    ({quizResults.filter(r => r.isCorrect).length}/{quizResults.length} richtig)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div ref={chatContainerRef} className="h-80 overflow-y-auto p-4 bg-gray-50 rounded-lg border mb-4 space-y-4">
+                    {chatHistory.length === 0 && !isGeminiLoading && (
+                      <div className="flex items-center justify-center h-full text-gray-400">
+                        <p>Analyse wird geladen...</p>
+                      </div>
+                    )}
                     {chatHistory.map((msg, index) => (
                       <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-3 rounded-xl text-sm ${msg.role === 'user' ? 'bg-brand text-white' : 'bg-white border shadow-sm'}`}>
@@ -405,7 +572,7 @@ export default function CompletionPage() {
                   </div>
                   <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
                     <Input
-                      placeholder="Stelle eine Frage..."
+                      placeholder="Stelle eine Frage zu deinen Ergebnissen..."
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       disabled={isGeminiLoading}
