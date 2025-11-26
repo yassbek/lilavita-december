@@ -4,8 +4,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { ElevenLabsClient } from "elevenlabs";
 
 export async function GET(request: NextRequest) {
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log("🔑 SIGNED URL REQUEST");
+  console.log("═══════════════════════════════════════════════════════════");
+
   const { searchParams } = new URL(request.url);
   const agentKey = searchParams.get("agentKey");
+
+  console.log("📋 Request details:");
+  console.log("  - Agent Key:", agentKey || "(none - using default)");
+  console.log("  - Full URL:", request.url);
+  console.log("  - Timestamp:", new Date().toISOString());
 
   // Mapping von agentKey zu Umgebungsvariablen-Namen
   const candidateKeys = (() => {
@@ -17,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (agentKey === "distribution") {
       return [
         "DISTRIBUTION_AGENT_ID",
-        "DISTRUBITION_AGENT_ID", // typo fallback
+        "DISTRUBITION_AGENT_ID",
         "distribution_agent_id",
         "distrubition_agent_id"
       ];
@@ -77,29 +86,69 @@ export async function GET(request: NextRequest) {
     return ["AGENT_ID", "agent_id"];
   })();
 
+  console.log("🔍 Searching for agent ID in environment variables:");
+  console.log("  - Candidate keys:", candidateKeys.join(", "));
+
+  // Debug: Alle verfügbaren ENV-Variablen mit "AGENT" anzeigen
+  const allAgentEnvVars = Object.keys(process.env).filter(k =>
+    k.toUpperCase().includes('AGENT')
+  );
+  console.log("  - Available AGENT env vars:", allAgentEnvVars.join(", "));
+
   const agentId = candidateKeys
-    .map(k => process.env[k as keyof NodeJS.ProcessEnv])
+    .map(k => {
+      const value = process.env[k as keyof NodeJS.ProcessEnv];
+      if (value) {
+        console.log(`  ✅ Found: ${k} = ${value.substring(0, 10)}...`);
+      }
+      return value;
+    })
     .find(Boolean);
 
   if (!agentId) {
-    console.error(`❌ Keine Agent-ID gefunden für key: ${agentKey}`);
-    console.error(`   Geprüfte Variablen: ${candidateKeys.join(", ")}`);
+    console.error("❌ NO AGENT ID FOUND!");
+    console.error("  - Requested key:", agentKey);
+    console.error("  - Searched variables:", candidateKeys.join(", "));
+    console.error("  - Available variables:", allAgentEnvVars.join(", "));
     throw Error(`${candidateKeys.join("/")} is not set`);
   }
 
+  console.log("✅ Agent ID found:", agentId.substring(0, 15) + "...");
+
   try {
+    console.log("🔌 Initializing ElevenLabs client...");
     const client = new ElevenLabsClient();
+
+    console.log("📡 Requesting signed URL from ElevenLabs API...");
+    console.log("  - Agent ID:", agentId);
+
     const response = await client.conversationalAi.getSignedUrl({
       agent_id: agentId,
     });
 
-    console.log(`✅ Signed URL generiert für: ${agentKey || 'default'}`);
+    console.log("✅ Signed URL received successfully");
+    console.log("  - URL preview:", response.signed_url.substring(0, 50) + "...");
+    console.log("  - URL length:", response.signed_url.length);
+    console.log("═══════════════════════════════════════════════════════════");
 
     return NextResponse.json({ signedUrl: response.signed_url });
+
   } catch (error) {
-    console.error("Error:", error);
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("🚨 ERROR GETTING SIGNED URL");
+    console.error("═══════════════════════════════════════════════════════════");
+    console.error("Error object:", error);
+    console.error("Error type:", typeof error);
+
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+
+    console.error("═══════════════════════════════════════════════════════════");
+
     return NextResponse.json(
-      { error: "Failed to get signed URL" },
+      { error: "Failed to get signed URL", details: String(error) },
       { status: 500 }
     );
   }

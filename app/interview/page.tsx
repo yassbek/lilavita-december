@@ -17,14 +17,13 @@ export default function InterviewPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 Minuten für die Simulation
   const [isTimerActive, setIsTimerActive] = useState(false);
-  const [endSignal, setEndSignal] = useState(0);
+  const [endSignal, setEndSignal] = useState<number | undefined>(undefined); // ✅ FIX: undefined statt 0
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([]);
   const [showIntro, setShowIntro] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false); // Loading-State für Analyse
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     try {
-      // Spezifischer Key für Magnesium
       const seen = typeof window !== "undefined" ? localStorage.getItem("pharmacy_magnesium_intro_seen") : "true";
       if (!seen) setShowIntro(true);
     } catch { }
@@ -42,20 +41,18 @@ export default function InterviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, isTimerActive, timeLeft]);
 
-  // ═══════════════════════════════════════════════════════════════
-  // ANGEPASSTE handleEndInterview FUNKTION
-  // ═══════════════════════════════════════════════════════════════
   const handleEndInterview = useCallback(async () => {
+    console.log("🛑 handleEndInterview aufgerufen");
     setIsTimerActive(false);
-    setEndSignal((s) => s + 1);
-    setIsAnalyzing(true); // Loading-State aktivieren
+    setEndSignal(Date.now()); // ✅ FIX: Eindeutiger Wert statt increment
+    setIsAnalyzing(true);
 
     const params = new URLSearchParams(searchParams);
     const nextPath = `/completion?${params.toString()}`;
 
     // Wenn kein Transkript vorhanden, direkt weiterleiten
     if (!transcript || transcript.length === 0) {
-      // Alte Daten löschen, damit Fallback genutzt wird
+      console.log("⚠️ Kein Transkript vorhanden, überspringe Analyse");
       if (typeof window !== "undefined") {
         sessionStorage.removeItem('dynamicLearningData');
       }
@@ -64,7 +61,7 @@ export default function InterviewPage() {
     }
 
     try {
-      // ⚠️ WICHTIG: type=pharmacy_magnesium für Magnesium-Thema
+      console.log("📊 Starte Transkript-Analyse...");
       const response = await fetch(`/api/analyze-transcript?type=pharmacy_magnesium`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,17 +70,14 @@ export default function InterviewPage() {
 
       if (response.ok) {
         const dynamicModules = await response.json();
-        // In sessionStorage speichern für die Completion-Seite
         sessionStorage.setItem('dynamicLearningData', JSON.stringify(dynamicModules));
         console.log("✅ Dynamische Module generiert:", dynamicModules.length);
       } else {
         console.error("❌ API Fehler:", response.status);
-        // Bei Fehler alte Daten löschen
         sessionStorage.removeItem('dynamicLearningData');
       }
     } catch (error) {
       console.error("❌ Fehler bei der Analyse:", error);
-      // Bei Fehler alte Daten löschen, damit Fallback genutzt wird
       if (typeof window !== "undefined") {
         sessionStorage.removeItem('dynamicLearningData');
       }
@@ -93,11 +87,13 @@ export default function InterviewPage() {
   }, [applicationId, router, searchParams, transcript]);
 
   const onConnect = useCallback(() => {
+    console.log("✅ onConnect callback - Setting isConnected to true");
     setIsConnected(true);
     setIsTimerActive(true);
   }, []);
 
   const onDisconnect = useCallback(() => {
+    console.log("❌ onDisconnect callback - Setting isConnected to false");
     setIsConnected(false);
     setIsTimerActive(false);
   }, []);
@@ -105,10 +101,14 @@ export default function InterviewPage() {
   const onMessage = useCallback((message: unknown) => {
     const m = message as { message: string; source: "user" | "ai" };
     if (!m?.message || !m?.source) return;
+
+    console.log(`💬 Message received from ${m.source}:`, m.message);
+
     setTranscript((prev) => [
       ...prev,
       { role: m.source, text: m.message, timestamp: new Date().toISOString() },
     ]);
+
     const el = document.getElementById("transcriptScroll");
     if (el) {
       setTimeout(() => {
@@ -123,7 +123,6 @@ export default function InterviewPage() {
     return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
   };
 
-  // Loading-Overlay während der Analyse
   if (isAnalyzing) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -253,7 +252,7 @@ export default function InterviewPage() {
                   onEnded={() => { }}
                   endSignal={endSignal}
                   agentKey="pharmacy_magnesium"
-                  avatarSrc="/assets/customer_avatar_generic.png"
+                  avatarSrc=""
                   hideTranscript
                 />
               </div>

@@ -10,22 +10,33 @@ import { cn } from "@/lib/utils";
 
 async function requestMicrophonePermission(): Promise<boolean> {
   try {
+    console.log("🎤 Requesting microphone permission...");
     await navigator.mediaDevices.getUserMedia({ audio: true });
+    console.log("✅ Microphone permission granted");
     return true;
-  } catch {
-    console.error("Microphone permission denied");
+  } catch (error) {
+    console.error("❌ Microphone permission denied:", error);
     return false;
   }
 }
 
 async function getSignedUrl(agentKey?: string): Promise<string> {
   const qs = agentKey ? `?agentKey=${encodeURIComponent(agentKey)}` : "";
+  console.log("🔑 Fetching signed URL for agent:", agentKey || "default");
+  console.log("📡 API URL:", `/api/signed-url${qs}`);
+
   const response = await fetch(`/api/signed-url${qs}`);
+
+  console.log("📥 Response status:", response.status, response.statusText);
+
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("❌ Failed to get signed url:", errorText);
     throw Error("Failed to get signed url");
   }
-  // Explicitly type the expected JSON shape
+
   const data: { signedUrl: string } = await response.json();
+  console.log("✅ Signed URL received:", data.signedUrl.substring(0, 50) + "...");
   return data.signedUrl;
 }
 
@@ -36,9 +47,9 @@ type ConvAIProps = {
   onMessage?: (message: unknown) => void;
   endSignal?: number;
   onEnded?: () => void;
-  agentKey?: string; // selects env-based agent id on the server
-  hideTranscript?: boolean; // when true, do not render internal transcript list
-  avatarSrc?: string; // optional avatar image to overlay on the orb
+  agentKey?: string;
+  hideTranscript?: boolean;
+  avatarSrc?: string;
 };
 
 export function ConvAI(props: ConvAIProps) {
@@ -46,7 +57,6 @@ export function ConvAI(props: ConvAIProps) {
     | { kind: "system"; text: string }
     | { kind: "user" | "ai"; text: string };
 
-  // Message shape hint from 11labs react hook events
   type ElevenMessage = {
     message?: string;
     source?: "user" | "ai" | string;
@@ -63,32 +73,50 @@ export function ConvAI(props: ConvAIProps) {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("connected");
+      console.log("✅ CONNECTED - WebSocket connection established");
+      console.log("📊 Connection timestamp:", new Date().toISOString());
       setTranscript((t) => [...t, { kind: "system", text: "Connected" }]);
       props.onConnect?.();
     },
     onDisconnect: () => {
-      console.log("disconnected");
+      console.log("❌ DISCONNECTED - WebSocket connection closed");
+      console.log("📊 Disconnection timestamp:", new Date().toISOString());
       setTranscript((t) => [...t, { kind: "system", text: "Disconnected" }]);
       props.onDisconnect?.();
     },
     onError: (error: unknown) => {
-      console.log(error);
+      console.log("🚨 ERROR occurred in conversation:");
+      console.log("Error object:", error);
+      console.log("Error type:", typeof error);
+      console.log("Error details:", JSON.stringify(error, null, 2));
+
+      if (error instanceof Error) {
+        console.log("Error message:", error.message);
+        console.log("Error stack:", error.stack);
+      }
+
       props.onError?.(error);
       alert("An error occurred during the conversation");
     },
     onMessage: (message: unknown) => {
-      console.log(message);
+      console.log("💬 MESSAGE received:");
+      console.log("Message object:", message);
+      console.log("Message type:", typeof message);
+      console.log("Message details:", JSON.stringify(message, null, 2));
+
       const entry: TranscriptEntry = (() => {
         if (typeof message === "object" && message !== null) {
           const maybe = message as ElevenMessage;
           const src = maybe.source === "user" || maybe.source === "ai" ? maybe.source : undefined;
           if (src && typeof maybe.message === "string") {
+            console.log(`  → Parsed as ${src} message:`, maybe.message);
             return { kind: src, text: maybe.message };
           }
         }
+        console.log("  → Parsed as system message:", String(message));
         return { kind: "system", text: String(message) };
       })();
+
       setTranscript((t) => [...t, entry]);
       props.onMessage?.(message);
     },
@@ -99,10 +127,17 @@ export function ConvAI(props: ConvAIProps) {
   useEffect(() => {
     if (props.endSignal === undefined) return;
     if (props.endSignal === lastEndSignalRef.current) return;
+
+    console.log("🛑 End signal received:", props.endSignal);
     lastEndSignalRef.current = props.endSignal;
+
     (async () => {
       try {
+        console.log("📞 Ending session...");
         await conversation.endSession();
+        console.log("✅ Session ended successfully");
+      } catch (error) {
+        console.error("❌ Error ending session:", error);
       } finally {
         props.onEnded?.();
       }
@@ -110,20 +145,56 @@ export function ConvAI(props: ConvAIProps) {
   }, [props.endSignal, conversation, props]);
 
   async function startConversation() {
+    console.log("🚀 START CONVERSATION CLICKED");
+    console.log("📋 Agent key:", props.agentKey);
+
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
+      console.error("❌ No microphone permission");
       alert("No permission");
       return;
     }
-    const signedUrl = await getSignedUrl(props.agentKey);
-    const conversationId = await conversation.startSession({ signedUrl });
-    console.log(conversationId);
+
+    try {
+      console.log("🔑 Getting signed URL...");
+      const signedUrl = await getSignedUrl(props.agentKey);
+
+      console.log("🚀 Starting session with signed URL...");
+      console.log("📊 Session start timestamp:", new Date().toISOString());
+
+      const conversationId = await conversation.startSession({ signedUrl });
+
+      console.log("✅ Session started successfully");
+      console.log("📞 Conversation ID:", conversationId);
+      console.log("📊 Current conversation status:", conversation.status);
+
+    } catch (error) {
+      console.error("❌ Error in startConversation:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+    }
   }
 
   const stopConversation = useCallback(async () => {
-    await conversation.endSession();
-    props.onEnded?.();
+    console.log("🛑 STOP CONVERSATION CLICKED");
+    console.log("📊 Current status before stop:", conversation.status);
+
+    try {
+      await conversation.endSession();
+      console.log("✅ Session ended successfully");
+      props.onEnded?.();
+    } catch (error) {
+      console.error("❌ Error stopping conversation:", error);
+    }
   }, [conversation, props]);
+
+  // Log status changes
+  useEffect(() => {
+    console.log("📊 Conversation status changed:", conversation.status);
+    console.log("🔊 Is speaking:", conversation.isSpeaking);
+  }, [conversation.status, conversation.isSpeaking]);
 
   return (
     <div className={"flex justify-center items-center gap-x-4"}>
@@ -164,8 +235,8 @@ export function ConvAI(props: ConvAIProps) {
                   conversation.status === "connected" && conversation.isSpeaking
                     ? "orb-active animate-orb"
                     : conversation.status === "connected"
-                    ? "animate-orb-slow orb-inactive"
-                    : "orb-inactive"
+                      ? "animate-orb-slow orb-inactive"
+                      : "orb-inactive"
                 )}
               ></div>
               {props.avatarSrc ? (
