@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import * as React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConversation } from "@11labs/react";
@@ -10,33 +10,35 @@ import { cn } from "@/lib/utils";
 
 async function requestMicrophonePermission(): Promise<boolean> {
   try {
-    console.log("🎤 Requesting microphone permission...");
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log("✅ Microphone permission granted");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      }
+    });
+
+    // Keep stream active
+    stream.getAudioTracks().forEach(track => {
+      track.enabled = true;
+    });
+
     return true;
   } catch (error) {
-    console.error("❌ Microphone permission denied:", error);
+    console.error("Microphone permission denied:", error);
     return false;
   }
 }
 
 async function getSignedUrl(agentKey?: string): Promise<string> {
   const qs = agentKey ? `?agentKey=${encodeURIComponent(agentKey)}` : "";
-  console.log("🔑 Fetching signed URL for agent:", agentKey || "default");
-  console.log("📡 API URL:", `/api/signed-url${qs}`);
-
   const response = await fetch(`/api/signed-url${qs}`);
 
-  console.log("📥 Response status:", response.status, response.statusText);
-
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("❌ Failed to get signed url:", errorText);
     throw Error("Failed to get signed url");
   }
 
   const data: { signedUrl: string } = await response.json();
-  console.log("✅ Signed URL received:", data.signedUrl.substring(0, 50) + "...");
   return data.signedUrl;
 }
 
@@ -62,8 +64,10 @@ export function ConvAI(props: ConvAIProps) {
     source?: "user" | "ai" | string;
   };
 
-  const [transcript, setTranscript] = React.useState<TranscriptEntry[]>([]);
-  const transcriptRef = React.useRef<HTMLDivElement | null>(null);
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const [isManualDisconnect, setIsManualDisconnect] = useState(false);
+  const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const el = transcriptRef.current;
@@ -73,47 +77,43 @@ export function ConvAI(props: ConvAIProps) {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("✅ CONNECTED - WebSocket connection established");
-      console.log("📊 Connection timestamp:", new Date().toISOString());
+      console.log("✅ Connected");
+      setIsManualDisconnect(false);
       setTranscript((t) => [...t, { kind: "system", text: "Connected" }]);
       props.onConnect?.();
     },
     onDisconnect: () => {
-      console.log("❌ DISCONNECTED - WebSocket connection closed");
-      console.log("📊 Disconnection timestamp:", new Date().toISOString());
-      setTranscript((t) => [...t, { kind: "system", text: "Disconnected" }]);
-      props.onDisconnect?.();
+      console.log("❌ Disconnected");
+
+      // Nur onDisconnect callback aufrufen wenn manuell disconnected
+      if (isManualDisconnect) {
+        setTranscript((t) => [...t, { kind: "system", text: "Disconnected" }]);
+        props.onDisconnect?.();
+      } else {
+        // Auto-reconnect bei unerwarteter Trennung
+        console.log("🔄 Unexpected disconnect, attempting reconnect...");
+        setTimeout(() => {
+          if (conversationIdRef.current) {
+            startConversation();
+          }
+        }, 1000);
+      }
     },
     onError: (error: unknown) => {
-      console.log("🚨 ERROR occurred in conversation:");
-      console.log("Error object:", error);
-      console.log("Error type:", typeof error);
-      console.log("Error details:", JSON.stringify(error, null, 2));
-
-      if (error instanceof Error) {
-        console.log("Error message:", error.message);
-        console.log("Error stack:", error.stack);
-      }
-
+      console.error("🚨 Error:", error);
       props.onError?.(error);
-      alert("An error occurred during the conversation");
     },
     onMessage: (message: unknown) => {
-      console.log("💬 MESSAGE received:");
-      console.log("Message object:", message);
-      console.log("Message type:", typeof message);
-      console.log("Message details:", JSON.stringify(message, null, 2));
+      console.log("💬 Message:", message);
 
       const entry: TranscriptEntry = (() => {
         if (typeof message === "object" && message !== null) {
           const maybe = message as ElevenMessage;
           const src = maybe.source === "user" || maybe.source === "ai" ? maybe.source : undefined;
           if (src && typeof maybe.message === "string") {
-            console.log(`  → Parsed as ${src} message:`, maybe.message);
             return { kind: src, text: maybe.message };
           }
         }
-        console.log("  → Parsed as system message:", String(message));
         return { kind: "system", text: String(message) };
       })();
 
@@ -128,73 +128,52 @@ export function ConvAI(props: ConvAIProps) {
     if (props.endSignal === undefined) return;
     if (props.endSignal === lastEndSignalRef.current) return;
 
-    console.log("🛑 End signal received:", props.endSignal);
     lastEndSignalRef.current = props.endSignal;
 
     (async () => {
       try {
-        console.log("📞 Ending session...");
+        setIsManualDisconnect(true);
         await conversation.endSession();
-        console.log("✅ Session ended successfully");
-      } catch (error) {
-        console.error("❌ Error ending session:", error);
       } finally {
+        conversationIdRef.current = null;
         props.onEnded?.();
       }
     })();
   }, [props.endSignal, conversation, props]);
 
   async function startConversation() {
-    console.log("🚀 START CONVERSATION CLICKED");
-    console.log("📋 Agent key:", props.agentKey);
-
-    const hasPermission = await requestMicrophonePermission();
-    if (!hasPermission) {
-      console.error("❌ No microphone permission");
-      alert("No permission");
-      return;
-    }
-
     try {
-      console.log("🔑 Getting signed URL...");
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        alert("Microphone permission required");
+        return;
+      }
+
       const signedUrl = await getSignedUrl(props.agentKey);
 
-      console.log("🚀 Starting session with signed URL...");
-      console.log("📊 Session start timestamp:", new Date().toISOString());
+      const conversationId = await conversation.startSession({
+        signedUrl,
+      });
 
-      const conversationId = await conversation.startSession({ signedUrl });
-
-      console.log("✅ Session started successfully");
-      console.log("📞 Conversation ID:", conversationId);
-      console.log("📊 Current conversation status:", conversation.status);
+      conversationIdRef.current = conversationId;
+      console.log("✅ Session started:", conversationId);
 
     } catch (error) {
-      console.error("❌ Error in startConversation:", error);
-      if (error instanceof Error) {
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-      }
+      console.error("❌ Error starting conversation:", error);
+      alert("Failed to start conversation. Please try again.");
     }
   }
 
   const stopConversation = useCallback(async () => {
-    console.log("🛑 STOP CONVERSATION CLICKED");
-    console.log("📊 Current status before stop:", conversation.status);
-
     try {
+      setIsManualDisconnect(true);
       await conversation.endSession();
-      console.log("✅ Session ended successfully");
+      conversationIdRef.current = null;
       props.onEnded?.();
     } catch (error) {
-      console.error("❌ Error stopping conversation:", error);
+      console.error("Error stopping conversation:", error);
     }
   }, [conversation, props]);
-
-  // Log status changes
-  useEffect(() => {
-    console.log("📊 Conversation status changed:", conversation.status);
-    console.log("🔊 Is speaking:", conversation.isSpeaking);
-  }, [conversation.status, conversation.isSpeaking]);
 
   return (
     <div className={"flex justify-center items-center gap-x-4"}>
