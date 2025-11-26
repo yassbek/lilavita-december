@@ -18,7 +18,6 @@ async function requestMicrophonePermission(): Promise<boolean> {
       }
     });
 
-    // Keep stream active
     stream.getAudioTracks().forEach(track => {
       track.enabled = true;
     });
@@ -66,7 +65,8 @@ export function ConvAI(props: ConvAIProps) {
 
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const transcriptRef = useRef<HTMLDivElement | null>(null);
-  const [isManualDisconnect, setIsManualDisconnect] = useState(false);
+  // Use useRef for immediate synchronous access in callbacks to avoid stale closures
+  const isManualDisconnectRef = useRef(false);
   const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -78,19 +78,17 @@ export function ConvAI(props: ConvAIProps) {
   const conversation = useConversation({
     onConnect: () => {
       console.log("✅ Connected");
-      setIsManualDisconnect(false);
+      isManualDisconnectRef.current = false;
       setTranscript((t) => [...t, { kind: "system", text: "Connected" }]);
       props.onConnect?.();
     },
     onDisconnect: () => {
       console.log("❌ Disconnected");
 
-      // Nur onDisconnect callback aufrufen wenn manuell disconnected
-      if (isManualDisconnect) {
+      if (isManualDisconnectRef.current) {
         setTranscript((t) => [...t, { kind: "system", text: "Disconnected" }]);
         props.onDisconnect?.();
       } else {
-        // Auto-reconnect bei unerwarteter Trennung
         console.log("🔄 Unexpected disconnect, attempting reconnect...");
         setTimeout(() => {
           if (conversationIdRef.current) {
@@ -122,6 +120,37 @@ export function ConvAI(props: ConvAIProps) {
     },
   });
 
+  // Keep a ref to the conversation object to access it in cleanup without triggering re-runs
+  const conversationRef = useRef(conversation);
+  useEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
+
+  // ✅ CLEANUP beim Unmount - KRITISCH!
+  useEffect(() => {
+    return () => {
+      console.log("🧹 ConvAI Component unmounting - FORCE CLEANUP ALL");
+      isManualDisconnectRef.current = true; // Prevent reconnect attempts
+
+      // Session beenden
+      if (conversationIdRef.current) {
+        console.log("🛑 Ending session on unmount:", conversationIdRef.current);
+        // Use the ref to get the latest conversation object
+        conversationRef.current.endSession().catch(e => console.error("Cleanup error:", e));
+      }
+
+      // Alle Media Streams stoppen
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          stream.getTracks().forEach(track => {
+            track.stop();
+            console.log("🎤 Stopped audio track on unmount");
+          });
+        })
+        .catch(() => { });
+    };
+  }, []); // Empty dependency array ensures this ONLY runs on unmount
+
   const lastEndSignalRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -134,17 +163,9 @@ export function ConvAI(props: ConvAIProps) {
 
     (async () => {
       try {
-        setIsManualDisconnect(true);
+        isManualDisconnectRef.current = true;
 
-        // ✅ FIX: Agent sofort stoppen (falls er gerade spricht)
-        console.log("🔇 Attempting to stop agent speech...");
-
-        // Versuche den Agent zu unterbrechen
-        if (conversation.isSpeaking) {
-          console.log("🗣️ Agent is speaking, interrupting...");
-        }
-
-        // ElevenLabs Session beenden
+        console.log("🔇 Ending session...");
         await conversation.endSession();
         console.log("✅ Session ended successfully");
 
@@ -167,6 +188,9 @@ export function ConvAI(props: ConvAIProps) {
 
       const signedUrl = await getSignedUrl(props.agentKey);
 
+      // Reset manual disconnect flag before starting
+      isManualDisconnectRef.current = false;
+
       const conversationId = await conversation.startSession({
         signedUrl,
       });
@@ -183,7 +207,7 @@ export function ConvAI(props: ConvAIProps) {
   const stopConversation = useCallback(async () => {
     try {
       console.log("🛑 Manual stop conversation");
-      setIsManualDisconnect(true);
+      isManualDisconnectRef.current = true;
       await conversation.endSession();
       conversationIdRef.current = null;
       props.onEnded?.();

@@ -15,9 +15,9 @@ export default function InterviewPage() {
   const applicationId = searchParams.get("applicationId");
 
   const [isConnected, setIsConnected] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 Minuten für die Simulation
+  const [timeLeft, setTimeLeft] = useState(5 * 60);
   const [isTimerActive, setIsTimerActive] = useState(false);
-  const [endSignal, setEndSignal] = useState<number | undefined>(undefined); // ✅ FIX: undefined statt 0
+  const [endSignal, setEndSignal] = useState<number | undefined>(undefined);
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "ai"; text: string; timestamp: string }>>([]);
   const [showIntro, setShowIntro] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -43,16 +43,21 @@ export default function InterviewPage() {
 
   const handleEndInterview = useCallback(async () => {
     console.log("🛑 handleEndInterview aufgerufen");
-    setIsTimerActive(false);
-    setEndSignal(Date.now()); // ✅ FIX: Eindeutiger Wert statt increment
+
+    // ✅ Zeige sofort "Analyzing" (User sieht Ladescreen statt Interview)
     setIsAnalyzing(true);
+    setIsTimerActive(false);
+
+    // ✅ Stoppe den Agent
+    setEndSignal(Date.now());
+
+    // ✅ Warte 3 Sekunden - Agent stoppt in dieser Zeit
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     const params = new URLSearchParams(searchParams);
     const nextPath = `/completion?${params.toString()}`;
 
-    // Wenn kein Transkript vorhanden, direkt weiterleiten
     if (!transcript || transcript.length === 0) {
-      console.log("⚠️ Kein Transkript vorhanden, überspringe Analyse");
       if (typeof window !== "undefined") {
         sessionStorage.removeItem('dynamicLearningData');
       }
@@ -61,7 +66,6 @@ export default function InterviewPage() {
     }
 
     try {
-      console.log("📊 Starte Transkript-Analyse...");
       const response = await fetch(`/api/analyze-transcript?type=pharmacy_magnesium`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,13 +75,10 @@ export default function InterviewPage() {
       if (response.ok) {
         const dynamicModules = await response.json();
         sessionStorage.setItem('dynamicLearningData', JSON.stringify(dynamicModules));
-        console.log("✅ Dynamische Module generiert:", dynamicModules.length);
       } else {
-        console.error("❌ API Fehler:", response.status);
         sessionStorage.removeItem('dynamicLearningData');
       }
     } catch (error) {
-      console.error("❌ Fehler bei der Analyse:", error);
       if (typeof window !== "undefined") {
         sessionStorage.removeItem('dynamicLearningData');
       }
@@ -216,9 +217,9 @@ export default function InterviewPage() {
           </DialogContent>
         </Dialog>
 
-        {!isConnected ? (
-          <div className="flex flex-col items-center">
-            <div className="w-full md:w-1/2">
+        <div className={isConnected ? "grid grid-cols-1 md:grid-cols-2 gap-8 items-start h-[calc(100vh-200px)]" : "flex flex-col items-center"}>
+          <div className={isConnected ? "w-full h-full flex flex-col" : "w-full md:w-1/2"}>
+            <div className={isConnected ? "flex-grow relative rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-black" : ""}>
               <ConvAI
                 onConnect={onConnect}
                 onDisconnect={onDisconnect}
@@ -230,33 +231,8 @@ export default function InterviewPage() {
                 hideTranscript
               />
             </div>
-            <div className="mt-8 flex justify-center">
-              <Button
-                variant="outline"
-                className="rounded-full border-gray-300 hover:bg-gray-100 px-8"
-                size="lg"
-                onClick={handleEndInterview}
-              >
-                Überspringen / Beenden
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start h-[calc(100vh-200px)]">
-            <div className="w-full h-full flex flex-col">
-              <div className="flex-grow relative rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-black">
-                <ConvAI
-                  onConnect={onConnect}
-                  onDisconnect={onDisconnect}
-                  onMessage={onMessage}
-                  onEnded={() => { }}
-                  endSignal={endSignal}
-                  agentKey="pharmacy_magnesium"
-                  avatarSrc=""
-                  hideTranscript
-                />
-              </div>
-              <div className="mt-6 flex justify-center">
+            <div className={isConnected ? "mt-6 flex justify-center" : "mt-8 flex justify-center"}>
+              {isConnected ? (
                 <Button
                   className="rounded-full bg-red-600 hover:bg-red-700 text-white px-8 shadow-md transition-all hover:scale-105"
                   size="lg"
@@ -264,9 +240,20 @@ export default function InterviewPage() {
                 >
                   Beratung beenden
                 </Button>
-              </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="rounded-full border-gray-300 hover:bg-gray-100 px-8"
+                  size="lg"
+                  onClick={handleEndInterview}
+                >
+                  Überspringen / Beenden
+                </Button>
+              )}
             </div>
+          </div>
 
+          {isConnected && (
             <div className="w-full h-full">
               <div className="rounded-3xl border border-gray-200 bg-white shadow-lg p-5 h-full flex flex-col" id="transcriptPanel">
                 <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
@@ -305,8 +292,8 @@ export default function InterviewPage() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
       <div className="opacity-50">
         <BackgroundWave />
