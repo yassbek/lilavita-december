@@ -178,6 +178,7 @@ export default function CompletionPage() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [learningModules, setLearningModules] = useState<LearningModule[]>([]);
+  const [learningOverview, setLearningOverview] = useState<string>("");
   const [activeQuiz, setActiveQuiz] = useState<Record<number, { selectedAnswer: number | null; isCorrect: boolean | null }>>({});
   const [completedModules, setCompletedModules] = useState<boolean[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
@@ -200,10 +201,12 @@ export default function CompletionPage() {
     const loadData = () => {
       try {
         const storedData = sessionStorage.getItem('dynamicLearningData');
+        const storedOverview = sessionStorage.getItem('dynamicLearningOverview');
         if (storedData) {
           const parsed = JSON.parse(storedData);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setLearningModules(parsed);
+            if (storedOverview) setLearningOverview(storedOverview);
             setCompletedModules(Array(parsed.length).fill(false));
             setQuizResults([]);
             setIsLoadingModules(false);
@@ -487,6 +490,23 @@ Nutzer fragt: ${userInput}`
           </Card>
         ) : (
           <div className="space-y-8">
+            {/* Overview Section */}
+            {learningOverview && (
+              <Card className="bg-blue-50 border-blue-100">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center space-x-2 text-blue-700 text-lg">
+                    <Sparkles className="w-5 h-5" />
+                    <span>Dein Gesprächs-Feedback</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-blue-900 leading-relaxed">
+                    {learningOverview}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Progress Section */}
             <div className="mb-6 flex justify-between items-end">
               <div>

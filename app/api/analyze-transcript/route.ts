@@ -27,6 +27,7 @@ interface LearningModule {
 interface TopicConfig {
   systemPrompt: string;
   fallbackModules: LearningModule[];
+  fallbackOverview?: string;
 }
 
 // ==================================================================
@@ -80,7 +81,10 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Array. Format:
   }
 ]
 
-Wichtig: Genau eine Antwort muss "isCorrect": true haben. Die Icons müssen aus der Liste stammen.`,
+Wichtig: Genau eine Antwort muss "isCorrect": true haben. Die Icons müssen aus der Liste stammen.
+
+Wenn "includeOverview" angefordert ist, füge ein Feld "overview" zum JSON-Objekt hinzu (nicht im Array, sondern als Wrapper: { "modules": [...], "overview": "..." }).
+Der Overview soll eine kurze Zusammenfassung der wichtigsten Learnings aus dem Gespräch sein (max 3 Sätze).`,
 
     fallbackModules: [
       {
@@ -209,7 +213,10 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Array. Format:
   }
 ]
 
-Wichtig: Genau eine Antwort muss "isCorrect": true haben.`,
+Wichtig: Genau eine Antwort muss "isCorrect": true haben.
+
+Wenn "includeOverview" angefordert ist, füge ein Feld "overview" zum JSON-Objekt hinzu (nicht im Array, sondern als Wrapper: { "modules": [...], "overview": "..." }).
+Der Overview soll eine kurze Zusammenfassung der wichtigsten Learnings aus dem Gespräch sein (max 3 Sätze).`,
 
     fallbackModules: [
       {
@@ -361,7 +368,10 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Array. Format:
   }
 ]
 
-Wichtig: Genau eine Antwort muss "isCorrect": true haben.`,
+Wichtig: Genau eine Antwort muss "isCorrect": true haben.
+
+Wenn "includeOverview" angefordert ist, füge ein Feld "overview" zum JSON-Objekt hinzu (nicht im Array, sondern als Wrapper: { "modules": [...], "overview": "..." }).
+Der Overview soll eine kurze Zusammenfassung der wichtigsten Learnings aus dem Gespräch sein (max 3 Sätze).`,
 
     fallbackModules: [
       {
@@ -463,7 +473,12 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Array. Format:
       ]
     }
   }
-]`,
+]
+Oder wenn includeOverview=true:
+{
+  "modules": [...],
+  "overview": "Zusammenfassung..."
+}`,
   fallbackModules: [
     {
       icon: "Sparkles",
@@ -483,14 +498,15 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Array. Format:
         ],
       },
     },
-  ]
+  ],
+  fallbackOverview: "In diesem Gespräch hast du die Grundlagen der Beratung angewendet. Achte darauf, noch genauer auf die Kundenbedürfnisse einzugehen."
 };
 
 // ==================================================================
 // 4. GEMINI API AUFRUF
 // ==================================================================
 
-async function callGeminiForAnalysis(transcriptText: string, topicType: string): Promise<LearningModule[]> {
+async function callGeminiForAnalysis(transcriptText: string, topicType: string, includeOverview: boolean = false): Promise<LearningModule[] | { modules: LearningModule[], overview: string }> {
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
 
   // Hole die richtige Konfiguration für das Thema
@@ -498,7 +514,8 @@ async function callGeminiForAnalysis(transcriptText: string, topicType: string):
 
   if (!apiKey) {
     console.warn("Gemini API Key fehlt. Nutze Fallback-Daten für:", topicType);
-    return config.fallbackModules;
+    // @ts-ignore
+    return { modules: config.fallbackModules, overview: config.fallbackOverview || "" };
   }
 
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -509,7 +526,7 @@ async function callGeminiForAnalysis(transcriptText: string, topicType: string):
       parts: [{ text: `Hier ist das Transkript des Beratungsgesprächs:\n\n${transcriptText}` }]
     }],
     systemInstruction: {
-      parts: [{ text: config.systemPrompt }]
+      parts: [{ text: config.systemPrompt + (includeOverview ? "\n\nBITTE AUCH 'overview' FELD GENERIEREN WIE OBEN BESCHRIEBEN." : "") }]
     },
     generationConfig: {
       responseMimeType: "application/json",
@@ -540,16 +557,31 @@ async function callGeminiForAnalysis(transcriptText: string, topicType: string):
     // Parse und validiere das JSON
     const parsedModules = JSON.parse(modelResponseText);
 
-    // Validierung: Ist es ein Array mit mindestens einem Modul?
-    if (!Array.isArray(parsedModules) || parsedModules.length === 0) {
-      throw new Error("Ungültiges Antwortformat von Gemini");
+    // Validierung
+    if (includeOverview) {
+      if (Array.isArray(parsedModules)) {
+        // Falls KI trotz Anweisung Array schickt
+        return { modules: parsedModules, overview: "" };
+      }
+      if (!parsedModules.modules || !Array.isArray(parsedModules.modules)) {
+        throw new Error("Ungültiges Antwortformat (erwarte { modules: [], overview: '' })");
+      }
+      return parsedModules;
+    } else {
+      if (!Array.isArray(parsedModules)) {
+        // Falls KI Objekt schickt obwohl nicht angefordert
+        if (parsedModules.modules && Array.isArray(parsedModules.modules)) {
+          return parsedModules.modules;
+        }
+        throw new Error("Ungültiges Antwortformat (erwarte Array)");
+      }
+      return parsedModules;
     }
-
-    return parsedModules;
 
   } catch (error) {
     console.error("Fehler bei der Gemini-Analyse:", error);
-    return config.fallbackModules;
+    // @ts-ignore
+    return { modules: config.fallbackModules, overview: config.fallbackOverview || "" };
   }
 }
 
@@ -562,6 +594,7 @@ export async function POST(request: Request) {
     // Query-Parameter auslesen (type=pharmacy_b_vitamins etc.)
     const { searchParams } = new URL(request.url);
     const topicType = searchParams.get('type') || 'default';
+    const includeOverview = searchParams.get('includeOverview') === 'true';
 
     // Body auslesen
     const body = await request.json();
@@ -573,6 +606,9 @@ export async function POST(request: Request) {
     if (!transcript || transcript.length === 0) {
       console.log("[API] Kein Transkript empfangen, nutze Fallback-Module.");
       const config = topicConfigs[topicType] || defaultConfig;
+      if (includeOverview) {
+        return NextResponse.json({ modules: config.fallbackModules, overview: config.fallbackOverview || "" });
+      }
       return NextResponse.json(config.fallbackModules);
     }
 
@@ -584,11 +620,23 @@ export async function POST(request: Request) {
     console.log(`[API] Transkript-Länge: ${transcriptText.length} Zeichen`);
 
     // KI-Analyse aufrufen
-    const dynamicModules = await callGeminiForAnalysis(transcriptText, topicType);
+    const result = await callGeminiForAnalysis(transcriptText, topicType, includeOverview);
 
-    console.log(`[API] ${dynamicModules.length} Module generiert`);
+    console.log(`[API] Analyse fertig.`);
 
-    return NextResponse.json(dynamicModules);
+    if (includeOverview) {
+      // Wenn result ein Array ist, dann ist es nur modules (Fallback oder altes Format)
+      if (Array.isArray(result)) {
+        return NextResponse.json({ modules: result, overview: "" });
+      }
+      return NextResponse.json(result);
+    } else {
+      // Wenn result ein Objekt mit modules ist, geben wir nur modules zurück für Backward Compat
+      if (!Array.isArray(result) && (result as any).modules) {
+        return NextResponse.json((result as any).modules);
+      }
+      return NextResponse.json(result);
+    }
 
   } catch (error) {
     console.error("[API] Fehler im Handler:", error);

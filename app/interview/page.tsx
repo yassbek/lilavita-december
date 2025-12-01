@@ -66,17 +66,29 @@ export default function InterviewPage() {
     }
 
     try {
-      const response = await fetch(`/api/analyze-transcript?type=pharmacy_magnesium`, {
+      const response = await fetch(`/api/analyze-transcript?type=pharmacy_magnesium&includeOverview=true`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript, applicationId }),
       });
 
       if (response.ok) {
-        const dynamicModules = await response.json();
-        sessionStorage.setItem('dynamicLearningData', JSON.stringify(dynamicModules));
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          // Backward compatibility
+          sessionStorage.setItem('dynamicLearningData', JSON.stringify(data));
+          sessionStorage.removeItem('dynamicLearningOverview');
+        } else if (data.modules) {
+          // New format
+          sessionStorage.setItem('dynamicLearningData', JSON.stringify(data.modules));
+          if (data.overview) {
+            sessionStorage.setItem('dynamicLearningOverview', data.overview);
+          }
+        }
       } else {
         sessionStorage.removeItem('dynamicLearningData');
+        sessionStorage.removeItem('dynamicLearningOverview');
       }
     } catch (error) {
       if (typeof window !== "undefined") {
