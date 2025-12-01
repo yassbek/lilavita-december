@@ -10,9 +10,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // HIER DEINE FARBE HINZUFÜGEN
-        brand: '#007A87',
-        'brand-accent': '#F39200',
+        // Lilavita Lernplattform Brand Colors
+        brand: '#7B4B94',
+        'brand-accent': '#9B6BB5',
+        'brand-light': '#B89DD1',
+        'brand-dark': '#5A3670',
 
         // Bestehende Farben bleiben unberührt
         background: 'hsl(var(--background))',

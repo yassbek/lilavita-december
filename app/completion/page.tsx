@@ -19,8 +19,11 @@ import {
   Dumbbell,
   Zap,
   Heart,
-  Pill
+  Pill,
+  ArrowLeft,
+  Home
 } from "lucide-react"
+import Link from "next/link"
 
 // ==================================================================
 // 1. TYPE DEFINITIONS
@@ -49,7 +52,6 @@ type ChatMessage = {
   text: string;
 };
 
-// NEU: Detaillierte Quiz-Ergebnisse
 interface QuizResult {
   question: string;
   userAnswer: string;
@@ -59,7 +61,7 @@ interface QuizResult {
 }
 
 // ==================================================================
-// 2. ICON MAPPING (erweitert)
+// 2. ICON MAPPING
 // ==================================================================
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   ShieldCheck: ShieldCheck,
@@ -85,7 +87,14 @@ const cleanText = (text: string) => {
 };
 
 // ==================================================================
-// 4. FALLBACK DATA (Magnesium-spezifisch)
+// 4. THEME CLASSES
+// ==================================================================
+const themeColorClass = "bg-blue-600";
+const themeTextClass = "text-blue-600";
+const themeBorderClass = "border-blue-600";
+
+// ==================================================================
+// 5. FALLBACK DATA
 // ==================================================================
 const fallbackModules: LearningModule[] = [
   {
@@ -163,29 +172,27 @@ const fallbackModules: LearningModule[] = [
 ];
 
 export default function CompletionPage() {
+  // ==================================================================
+  // STATE DECLARATIONS
+  // ==================================================================
   const [showSuccess, setShowSuccess] = useState(false)
   const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [learningModules, setLearningModules] = useState<LearningModule[]>([]);
   const [activeQuiz, setActiveQuiz] = useState<Record<number, { selectedAnswer: number | null; isCorrect: boolean | null }>>({});
   const [completedModules, setCompletedModules] = useState<boolean[]>([]);
-
-  // NEU: Detaillierte Quiz-Ergebnisse statt nur Antwort-Texte
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
 
   // Chat State
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isGeminiLoading, setIsGeminiLoading] = useState(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const analysisTriggered = useRef(false);
 
-  // Theme Color
-  const themeColorClass = "bg-brand";
-  const themeTextClass = "text-brand";
-  const themeBorderClass = "border-brand";
+  // Refs
+  const analysisTriggered = useRef(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // ==================================================================
-  // INIT: Load Data & Animation
+  // INITIALIZATION EFFECT
   // ==================================================================
   useEffect(() => {
     const timer = setTimeout(() => setShowSuccess(true), 300);
@@ -218,12 +225,11 @@ export default function CompletionPage() {
   }, []);
 
   // ==================================================================
-  // VERBESSERTE GEMINI API MIT RETRY UND BESSEREM PROMPT
+  // GEMINI API CALL
   // ==================================================================
   const callGeminiAPI = useCallback(async (history: ChatMessage[], isInitialAnalysis: boolean = false) => {
     setIsGeminiLoading(true);
 
-    // Verbesserter System-Prompt für echte Analyse
     const systemPrompt = `Du bist ein erfahrener Apotheken-Coach und Experte für Magnesiumcitrat 130.
 
 DEINE AUFGABE:
@@ -265,7 +271,6 @@ Halte dich prägnant (max 300 Wörter). Antworte auf Deutsch.`;
           })
         });
 
-        // Retry bei 503
         if (response.status === 503 && retries > 0) {
           console.warn(`API 503 Error. Retrying in ${delay}ms... (${retries} attempts left)`);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -305,27 +310,24 @@ Halte dich prägnant (max 300 Wörter). Antworte auf Deutsch.`;
     }
   }, []);
 
-  // Progress berechnen
+  // Progress calculation
   const progress = learningModules.length > 0 ? (completedModules.filter(Boolean).length / learningModules.length) * 100 : 0;
   const allModulesCompleted = progress === 100 && learningModules.length > 0;
 
   // ==================================================================
-  // VERBESSERTE ANALYSE-TRIGGER MIT DETAILLIERTEN ERGEBNISSEN
+  // ANALYSIS TRIGGER EFFECT
   // ==================================================================
   useEffect(() => {
-    // Trigger nur wenn: alle Module abgeschlossen UND genau so viele Ergebnisse wie Module
     if (allModulesCompleted &&
       !analysisTriggered.current &&
       quizResults.length === learningModules.length &&
       learningModules.length > 0) {
       analysisTriggered.current = true;
 
-      // Zähle richtige Antworten
       const correctCount = quizResults.filter(r => r.isCorrect).length;
       const totalCount = quizResults.length;
       const percentage = Math.round((correctCount / totalCount) * 100);
 
-      // Erstelle detaillierte Zusammenfassung
       const detailedResults = quizResults.map((result, index) => {
         const status = result.isCorrect ? '✅' : '❌';
         let resultText = `${index + 1}. Modul: "${result.moduleTopic}"
@@ -339,7 +341,6 @@ Halte dich prägnant (max 300 Wörter). Antworte auf Deutsch.`;
         return resultText;
       }).join('\n\n');
 
-      // Erstelle den Analyse-Prompt
       const analysisPrompt = `Ich habe das Magnesiumcitrat 130 Training abgeschlossen. Hier sind meine Ergebnisse:
 
 ═══════════════════════════════════════
@@ -361,13 +362,12 @@ Bitte analysiere meine Leistung im Detail:
       setChatHistory([msg]);
       callGeminiAPI([msg], true);
     }
-  }, [allModulesCompleted, callGeminiAPI, quizResults]);
+  }, [allModulesCompleted, callGeminiAPI, quizResults, learningModules.length]);
 
   // ==================================================================
-  // VERBESSERTE ANTWORT-AUSWAHL MIT DETAILLIERTER ERFASSUNG
+  // ANSWER SELECTION HANDLER
   // ==================================================================
   const handleAnswerSelect = (modIdx: number, ansIdx: number) => {
-    // Verhindere doppelte Einträge - prüfe ZUERST ob bereits beantwortet
     if (completedModules[modIdx]) return;
     if (activeQuiz[modIdx]?.selectedAnswer !== null && activeQuiz[modIdx]?.selectedAnswer !== undefined) return;
 
@@ -376,15 +376,11 @@ Bitte analysiere meine Leistung im Detail:
     const isCorrect = selectedAnswer.isCorrect;
     const correctAnswer = currentModule.quiz.answers.find(a => a.isCorrect);
 
-    // Quiz-State aktualisieren
     setActiveQuiz(prev => ({ ...prev, [modIdx]: { selectedAnswer: ansIdx, isCorrect } }));
 
-    // Ergebnis speichern - nutze funktionale Updates um Race Conditions zu vermeiden
     setQuizResults(prev => {
-      // Prüfe ob für diesen Modul-Index bereits ein Ergebnis existiert
       const existingIndex = prev.findIndex(r => r.moduleTopic === currentModule.title);
       if (existingIndex !== -1) {
-        // Bereits vorhanden, nicht nochmal hinzufügen
         return prev;
       }
 
@@ -397,7 +393,6 @@ Bitte analysiere meine Leistung im Detail:
       }];
     });
 
-    // Modul als abgeschlossen markieren
     setTimeout(() => {
       setCompletedModules(prev => {
         const n = [...prev];
@@ -408,22 +403,19 @@ Bitte analysiere meine Leistung im Detail:
   };
 
   // ==================================================================
-  // CHAT MESSAGE HANDLER MIT KONTEXT
+  // CHAT MESSAGE HANDLER
   // ==================================================================
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || isGeminiLoading) return;
 
-    // Füge Kontext für Folgefragen hinzu
     const contextInfo = quizResults.length > 0
       ? `[Kontext: Nutzer hat ${quizResults.filter(r => r.isCorrect).length}/${quizResults.length} Fragen richtig beantwortet im Magnesium-Training]
 
 Nutzer fragt: ${userInput}`
       : userInput;
 
-    // Zeige nur die User-Frage an
     const displayMsg: ChatMessage = { role: 'user', text: userInput };
-    // Sende aber den Kontext mit
     const apiMsg: ChatMessage = { role: 'user', text: contextInfo };
 
     setChatHistory(prev => [...prev, displayMsg]);
@@ -442,18 +434,19 @@ Nutzer fragt: ${userInput}`
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-5">
-              <div className={`w-16 h-16 ${themeColorClass} rounded-lg flex items-center justify-center shadow-sm`}>
-                <Award className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Auswertung & Lernpfad</h1>
-                <p className="text-gray-600">Dein persönliches Magnesium-Trainingsprogramm</p>
-              </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/start">
+                <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Zurück zum Start</span>
+                </Button>
+              </Link>
+              <h1 className="text-xl font-bold text-gray-900">Training abgeschlossen</h1>
             </div>
+
             {/* Ergebnis-Badge wenn fertig */}
             {allModulesCompleted && quizResults.length > 0 && (
               <div className="hidden sm:flex items-center space-x-2 bg-green-50 border border-green-200 rounded-full px-4 py-2">
@@ -494,97 +487,94 @@ Nutzer fragt: ${userInput}`
           </Card>
         ) : (
           <div className="space-y-8">
-            <div>
-              {/* Progress Section */}
-              <div className="mb-6 flex justify-between items-end">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Wissens-Check</h3>
-                  <p className="text-sm text-gray-500">Beantworte alle Fragen, um deine persönliche KI-Analyse zu starten.</p>
-                </div>
-                <div className="text-right w-1/3">
-                  <p className="text-xs text-gray-500 mb-1">{Math.round(progress)}% abgeschlossen</p>
-                  <Progress value={progress} className="w-full [&>*]:bg-brand" />
-                </div>
+            {/* Progress Section */}
+            <div className="mb-6 flex justify-between items-end">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Wissens-Check</h3>
+                <p className="text-sm text-gray-500">Beantworte alle Fragen, um deine persönliche KI-Analyse zu starten.</p>
               </div>
-
-              {/* Modules Grid */}
-              <div className="grid gap-6 md:grid-cols-2">
-                {learningModules.map((mod, index) => {
-                  const quizState = activeQuiz[index];
-                  const isCompleted = completedModules[index];
-                  const ModuleIcon = iconMap[mod.icon] || iconMap.Default;
-
-                  return (
-                    <Card key={index} className={`transition-all duration-300 ${isCompleted ? 'border-green-500 ring-1 ring-green-100' : 'hover:shadow-md'}`}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className={`w-10 h-10 ${isCompleted ? 'bg-green-100' : 'bg-brand/10'} rounded-lg flex items-center justify-center`}>
-                            <ModuleIcon className={`w-5 h-5 ${isCompleted ? 'text-green-600' : themeTextClass}`} />
-                          </div>
-                          {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
-                        </div>
-                        <CardTitle className="mt-4 text-lg">{mod.title}</CardTitle>
-                        <CardDescription>{mod.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {/* Lerninhalte */}
-                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-2">Lerninhalte:</h4>
-                          <ul className="space-y-2">
-                            {mod.content.map((item, i) => (
-                              <li key={i} className="flex items-start text-xs text-gray-700">
-                                <div className={`w-1 h-1 ${themeColorClass} rounded-full mt-1.5 mr-2 flex-shrink-0`}></div>
-                                <span dangerouslySetInnerHTML={{ __html: cleanText(item) }}></span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        {/* Quiz */}
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 mb-3">{mod.quiz.question}</p>
-                          <div className="space-y-2">
-                            {mod.quiz.answers.map((answer, answerIndex) => {
-                              const isSelected = quizState?.selectedAnswer === answerIndex;
-                              const showCorrectAnswer = isCompleted && answer.isCorrect && !quizState?.isCorrect;
-
-                              let buttonClass = 'bg-white hover:bg-gray-50 border-gray-200';
-                              if (isSelected) {
-                                buttonClass = quizState.isCorrect
-                                  ? 'bg-green-100 border-green-500 text-green-900'
-                                  : 'bg-red-100 border-red-500 text-red-900';
-                              } else if (showCorrectAnswer) {
-                                // Zeige die richtige Antwort grün wenn falsch gewählt wurde
-                                buttonClass = 'bg-green-50 border-green-400 text-green-800';
-                              }
-
-                              return (
-                                <Button
-                                  key={answerIndex}
-                                  variant="outline"
-                                  className={`w-full justify-start text-left h-auto py-2 px-3 whitespace-normal text-sm ${buttonClass}`}
-                                  onClick={() => handleAnswerSelect(index, answerIndex)}
-                                  disabled={isCompleted}
-                                >
-                                  {isSelected && (
-                                    quizState.isCorrect
-                                      ? <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-green-600" />
-                                      : <XCircle className="w-4 h-4 mr-2 flex-shrink-0 text-red-600" />
-                                  )}
-                                  {showCorrectAnswer && (
-                                    <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-green-600" />
-                                  )}
-                                  {answer.text}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <div className="text-right w-1/3">
+                <p className="text-xs text-gray-500 mb-1">{Math.round(progress)}% abgeschlossen</p>
+                <Progress value={progress} className="w-full [&>*]:bg-blue-600" />
               </div>
+            </div>
+
+            {/* Modules Grid */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {learningModules.map((mod, index) => {
+                const quizState = activeQuiz[index];
+                const isCompleted = completedModules[index];
+                const ModuleIcon = iconMap[mod.icon] || iconMap.Default;
+
+                return (
+                  <Card key={index} className={`transition-all duration-300 ${isCompleted ? 'border-green-500 ring-1 ring-green-100' : 'hover:shadow-md'}`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className={`w-10 h-10 ${isCompleted ? 'bg-green-100' : 'bg-blue-600/10'} rounded-lg flex items-center justify-center`}>
+                          <ModuleIcon className={`w-5 h-5 ${isCompleted ? 'text-green-600' : themeTextClass}`} />
+                        </div>
+                        {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
+                      </div>
+                      <CardTitle className="mt-4 text-lg">{mod.title}</CardTitle>
+                      <CardDescription>{mod.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {/* Lerninhalte */}
+                      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-2">Lerninhalte:</h4>
+                        <ul className="space-y-2">
+                          {mod.content.map((item, i) => (
+                            <li key={i} className="flex items-start text-xs text-gray-700">
+                              <div className={`w-1 h-1 ${themeColorClass} rounded-full mt-1.5 mr-2 flex-shrink-0`}></div>
+                              <span dangerouslySetInnerHTML={{ __html: cleanText(item) }}></span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Quiz */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 mb-3">{mod.quiz.question}</p>
+                        <div className="space-y-2">
+                          {mod.quiz.answers.map((answer, answerIndex) => {
+                            const isSelected = quizState?.selectedAnswer === answerIndex;
+                            const showCorrectAnswer = isCompleted && answer.isCorrect && !quizState?.isCorrect;
+
+                            let buttonClass = 'bg-white hover:bg-gray-50 border-gray-200';
+                            if (isSelected) {
+                              buttonClass = quizState.isCorrect
+                                ? 'bg-green-100 border-green-500 text-green-900'
+                                : 'bg-red-100 border-red-500 text-red-900';
+                            } else if (showCorrectAnswer) {
+                              buttonClass = 'bg-green-50 border-green-400 text-green-800';
+                            }
+
+                            return (
+                              <Button
+                                key={answerIndex}
+                                variant="outline"
+                                className={`w-full justify-start text-left h-auto py-2 px-3 whitespace-normal text-sm ${buttonClass}`}
+                                onClick={() => handleAnswerSelect(index, answerIndex)}
+                                disabled={isCompleted}
+                              >
+                                {isSelected && (
+                                  quizState.isCorrect
+                                    ? <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-green-600" />
+                                    : <XCircle className="w-4 h-4 mr-2 flex-shrink-0 text-red-600" />
+                                )}
+                                {showCorrectAnswer && (
+                                  <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-green-600" />
+                                )}
+                                {answer.text}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* AI Analysis Section */}
@@ -604,22 +594,24 @@ Nutzer fragt: ${userInput}`
                     {chatHistory.length === 0 && isGeminiLoading && (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
-                          <div className="flex justify-center space-x-1 mb-3">
-                            <div className={`w-2 h-2 ${themeColorClass} rounded-full animate-bounce`}></div>
-                            <div className={`w-2 h-2 ${themeColorClass} rounded-full animate-bounce`} style={{ animationDelay: '0.1s' }}></div>
-                            <div className={`w-2 h-2 ${themeColorClass} rounded-full animate-bounce`} style={{ animationDelay: '0.2s' }}></div>
+                          <div className="flex items-center justify-center space-x-1 mb-2">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                           </div>
-                          <p className="text-gray-500">Analysiere deine Antworten...</p>
+                          <p className="text-sm text-gray-500">Analysiere deine Ergebnisse...</p>
                         </div>
                       </div>
                     )}
-                    {chatHistory.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] p-4 rounded-xl text-sm ${msg.role === 'user' ? `${themeColorClass} text-white` : 'bg-white border shadow-sm'}`}>
+
+                    {chatHistory.map((msg, idx) => (
+                      <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-3 rounded-xl ${msg.role === 'user' ? `${themeColorClass} text-white` : 'bg-white border'}`}>
                           <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                         </div>
                       </div>
                     ))}
+
                     {isGeminiLoading && chatHistory.length > 0 && (
                       <div className="flex justify-start">
                         <div className="p-3 rounded-xl bg-white border">
@@ -634,22 +626,28 @@ Nutzer fragt: ${userInput}`
                   </div>
 
                   {/* Chat Input */}
-                  <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                     <Input
                       placeholder="Stelle eine Frage zu deinen Ergebnissen oder zu Magnesium..."
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage(e);
+                        }
+                      }}
                       disabled={isGeminiLoading}
                       className="flex-grow"
                     />
                     <Button
-                      type="submit"
+                      onClick={handleSendMessage}
                       disabled={isGeminiLoading || !userInput.trim()}
                       className={`${themeColorClass} hover:opacity-90`}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
-                  </form>
+                  </div>
 
                   {/* Beispiel-Fragen */}
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -669,24 +667,22 @@ Nutzer fragt: ${userInput}`
                       </button>
                     ))}
                   </div>
-
-                  {/* Zurück Button */}
-                  <div className="mt-6 flex justify-center pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={() => window.location.href = '/start'}
-                      size="lg"
-                      className="px-8"
-                    >
-                      Zurück zur Übersicht
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Zurück zum Start Button am Ende */}
+            <div className="flex justify-center pt-6">
+              <Link href="/start">
+                <Button className="flex items-center space-x-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3">
+                  <Home className="w-5 h-5" />
+                  <span>Neues Training starten</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
       </main>
     </div>
-  )
+  );
 }

@@ -4,38 +4,7 @@ import Image from "next/image"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Zap, Sun, Shield, Sparkles } from "lucide-react"
-
-// Definieren der verfügbaren Schulungsmodule für die Lilavita Lernplattform
-const trainingModules = [
-  {
-    title: "Magnesiumcitrat 130",
-    description: "Beratung bei Muskelkrämpfen, Stress und erhöhtem Bedarf. Ideal für Sportler und bei Diuretika-Einnahme.",
-    path: "/preparation",
-    icon: Zap,
-    gradient: "from-amber-400 to-orange-500",
-    shadowColor: "shadow-orange-200",
-    hoverShadow: "hover:shadow-orange-300/50",
-  },
-  {
-    title: "Vitamin B",
-    description: "Coaching zur Beratung von Patienten mit Vitamin-B-Mangel, besonders in den Wintermonaten und bei Risikogruppen.",
-    path: "/preparation_distribution",
-    icon: Sun,
-    gradient: "from-yellow-400 to-amber-500",
-    shadowColor: "shadow-amber-200",
-    hoverShadow: "hover:shadow-amber-300/50",
-  },
-  {
-    title: "Perenterol forte",
-    description: "Training zur Empfehlung bei Durchfallerkrankungen und zur Wiederherstellung der Darmflora.",
-    path: "/preparation_finance",
-    icon: Shield,
-    gradient: "from-emerald-400 to-teal-500",
-    shadowColor: "shadow-teal-200",
-    hoverShadow: "hover:shadow-teal-300/50",
-  },
-]
+import { ArrowRight, Zap, Sparkles } from "lucide-react"
 
 export default function StartPage() {
   const router = useRouter()
@@ -47,12 +16,12 @@ export default function StartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-brand/20 to-purple-200/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-amber-200/30 to-orange-200/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-teal-200/30 to-emerald-200/20 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-brand/20 to-brand-accent/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-brand-light/30 to-purple-200/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-violet-200/30 to-brand/20 rounded-full blur-3xl" />
       </div>
 
       {/* Header */}
@@ -62,16 +31,16 @@ export default function StartPage() {
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <Image
-                  src="/medice-logo.png"
-                  alt="Medice Logo"
-                  width={140}
-                  height={40}
-                  className="h-10 w-auto"
+                  src="/lilavita-logo.png"
+                  alt="Lilavita Logo"
+                  width={180}
+                  height={50}
+                  className="h-12 w-auto"
                 />
               </div>
               <div className="h-8 w-px bg-gray-300" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Lernplattform</h1>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Lilavita Lernplattform</h1>
                 <p className="text-xs text-gray-500">Apotheken-Coaching</p>
               </div>
             </div>
@@ -87,79 +56,71 @@ export default function StartPage() {
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="mb-16 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-brand/10 text-brand text-sm font-medium mb-6">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-brand/10 text-brand text-sm font-medium mb-6 shadow-sm">
             <Sparkles className="w-4 h-4 mr-2" />
             Praxisnahes Training für den HV
           </div>
           <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-5 leading-tight">
-            Willkommen beim
-            <span className="block bg-gradient-to-r from-brand via-purple-600 to-brand bg-clip-text text-transparent">
-              Apotheken-Coaching
+            Willkommen bei
+            <span className="block bg-gradient-to-r from-brand via-brand-accent to-brand-light bg-clip-text text-transparent mt-2">
+              Lilavita Lernplattform
             </span>
           </h2>
           <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            Perfektioniere deine Beratungskompetenz mit interaktiven Simulationen.
-            Wähle ein Präparat und trainiere realistische Kundengespräche.
+            Perfektioniere deine Beratungskompetenz mit interaktiven KI-Simulationen.
+            Trainiere realistische Kundengespräche und erhalte personalisiertes Feedback.
           </p>
         </div>
 
-        {/* Training Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {trainingModules.map((module, index) => {
-            const Icon = module.icon;
-            return (
-              <Card
-                key={module.title}
-                className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm hover:bg-white transition-all duration-500 border-0 shadow-lg ${module.shadowColor} ${module.hoverShadow} hover:shadow-2xl hover:-translate-y-2`}
-                style={{ animationDelay: `${index * 100}ms` }}
+        {/* Training Module - Magnesium Only */}
+        <div className="max-w-md mx-auto">
+          <Card className="group relative overflow-hidden bg-white/90 backdrop-blur-sm hover:bg-white transition-all duration-500 border-2 border-brand/20 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:border-brand/40">
+            {/* Top gradient bar */}
+            <div className="h-2 bg-gradient-to-r from-brand via-brand-accent to-brand-light" />
+
+            <div className="p-8">
+              {/* Icon */}
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand to-brand-accent flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 mx-auto">
+                <Zap className="w-10 h-10 text-white" />
+              </div>
+
+              {/* Content */}
+              <CardTitle className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                Magnesiumcitrat 130
+              </CardTitle>
+              <CardDescription className="text-gray-600 leading-relaxed mb-8 text-center">
+                Beratung bei Muskelkrämpfen, Stress und erhöhtem Bedarf. Ideal für Sportler und bei Diuretika-Einnahme.
+              </CardDescription>
+
+              {/* Button */}
+              <Button
+                onClick={() => navigateToTraining("/preparation")}
+                className="w-full bg-gradient-to-r from-brand to-brand-accent hover:from-brand-dark hover:to-brand text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-md hover:shadow-xl group/btn"
+                size="lg"
               >
-                {/* Top gradient bar */}
-                <div className={`h-1.5 bg-gradient-to-r ${module.gradient}`} />
+                <span>Simulation starten</span>
+                <ArrowRight className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+              </Button>
+            </div>
 
-                <div className="p-6 sm:p-8">
-                  {/* Icon */}
-                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                    <Icon className="w-8 h-8 text-white" />
-                  </div>
-
-                  {/* Content */}
-                  <CardTitle className="text-xl font-bold text-gray-900 mb-3">
-                    {module.title}
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 leading-relaxed mb-6 min-h-[4.5rem]">
-                    {module.description}
-                  </CardDescription>
-
-                  {/* Button */}
-                  <Button
-                    onClick={() => navigateToTraining(module.path)}
-                    className={`w-full bg-gradient-to-r ${module.gradient} hover:opacity-90 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg group/btn`}
-                  >
-                    <span>Simulation starten</span>
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-
-                {/* Decorative corner */}
-                <div className={`absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br ${module.gradient} opacity-10 rounded-full group-hover:scale-150 transition-transform duration-700`} />
-              </Card>
-            )
-          })}
+            {/* Decorative corner */}
+            <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-brand to-brand-accent opacity-10 rounded-full group-hover:scale-150 transition-transform duration-700" />
+          </Card>
         </div>
 
         {/* Bottom info section */}
         <div className="mt-16 text-center">
           <div className="inline-flex items-center space-x-6 text-sm text-gray-500">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Interaktive Szenarien</span>
+              <div className="w-2 h-2 rounded-full bg-brand" />
+              <span>KI-gestützt</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <div className="w-2 h-2 rounded-full bg-brand-accent" />
               <span>Direktes Feedback</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-brand" />
+              <div className="w-2 h-2 rounded-full bg-brand-light" />
               <span>Praxisnah</span>
             </div>
           </div>
@@ -169,9 +130,8 @@ export default function StartPage() {
       {/* Footer */}
       <footer className="relative mt-auto py-6 border-t border-gray-200/50 bg-white/50 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-gray-500">
-            <p>© 2024 Medice Health Family. Alle Rechte vorbehalten.</p>
-            <p className="mt-2 sm:mt-0">Powered by Lilavita</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-500">
+            <p>© 2024 Lilavita Lernplattform. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>

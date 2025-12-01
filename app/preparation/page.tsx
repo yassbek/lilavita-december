@@ -80,12 +80,10 @@ export default function PreparationPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-5">
-              {/* --- Anpassung: Farbe wurde zu Brand Orange geändert --- */}
-              <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-accent rounded-lg flex items-center justify-center shadow-md">
                 <Pill className="w-8 h-8 text-white" />
               </div>
               <div>
-                {/* --- Anpassung: Titel und Untertitel für den Apotheken-Kontext --- */}
                 <h1 className="text-2xl font-bold text-gray-900">Beratungssimulation: Magnesiumcitrat 130</h1>
                 <p className="text-gray-600">Bereite dich auf das Kundengespräch vor</p>
               </div>
@@ -115,7 +113,7 @@ export default function PreparationPage() {
               In dieser Simulation üben wir, die Vorteile von Magnesiumcitrat 130 aktiv zu kommunizieren, passende Kundengruppen zu erkennen und überzeugend auf typische Fragen und Einwände zu reagieren. Ziel ist es, dass du dich im HV-Alltag sicher fühlst, das Produkt proaktiv zu empfehlen.
             </p>
 
-            <div className="bg-brand/10 border border-brand/20 rounded-lg p-4">
+            <div className="bg-brand/10 border border-brand/20 rounded-lg p-4 shadow-sm">
               <div className="flex items-start space-x-3">
                 <Info className="w-5 h-5 text-brand mt-0.5" />
                 <div>
@@ -190,8 +188,8 @@ export default function PreparationPage() {
                   <label
                     htmlFor={`checklist-${index}`}
                     className={`text-sm cursor-pointer ${checkedItems[index]
-                        ? "text-gray-900 line-through decoration-brand"
-                        : "text-gray-700"
+                      ? "text-gray-900 line-through decoration-brand"
+                      : "text-gray-700"
                       }`}
                   >
                     {item}
@@ -221,7 +219,7 @@ export default function PreparationPage() {
             onClick={handleStartSimulation}
             disabled={!isReady}
             // --- Anpassung: Markenfarbe wurde zu Brand Orange geändert ---
-            className="bg-brand hover:bg-brand/90 text-white font-medium px-8 py-3 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-brand to-brand-accent hover:from-brand-dark hover:to-brand text-white font-medium px-8 py-3 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all"
             size="lg"
           >
             {/* --- Anpassung: Button-Text --- */}

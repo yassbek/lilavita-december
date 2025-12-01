@@ -142,7 +142,7 @@ export default function InterviewPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-5">
-              <div className="w-16 h-16 bg-brand rounded-lg flex items-center justify-center shadow-sm">
+              <div className="w-16 h-16 bg-gradient-to-br from-brand to-brand-accent rounded-lg flex items-center justify-center shadow-md">
                 <Pill className="w-8 h-8 text-white" />
               </div>
               <div>
@@ -208,7 +208,7 @@ export default function InterviewPage() {
             </DialogHeader>
             <DialogFooter>
               <Button
-                className="bg-brand hover:bg-brand/90 text-white"
+                className="bg-gradient-to-r from-brand to-brand-accent hover:from-brand-dark hover:to-brand text-white shadow-md hover:shadow-lg transition-all"
                 onClick={() => { setShowIntro(false); try { localStorage.setItem("pharmacy_magnesium_intro_seen", "true"); } catch { } }}
               >
                 Simulation starten
@@ -234,7 +234,7 @@ export default function InterviewPage() {
             <div className={isConnected ? "mt-6 flex justify-center" : "mt-8 flex justify-center"}>
               {isConnected ? (
                 <Button
-                  className="rounded-full bg-red-600 hover:bg-red-700 text-white px-8 shadow-md transition-all hover:scale-105"
+                  className="rounded-full bg-red-600 hover:bg-red-700 text-white px-8 shadow-lg hover:shadow-xl transition-all hover:scale-105"
                   size="lg"
                   onClick={handleEndInterview}
                 >
