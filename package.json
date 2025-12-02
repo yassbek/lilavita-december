@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@11labs/react": "0.0.8",
+    "@11labs/react": "0.2.0",
     "@directus/sdk": "^20.0.0",
     "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-accordion": "^1.2.11",
